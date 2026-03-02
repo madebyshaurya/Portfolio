@@ -51,7 +51,7 @@ export default function Header() {
         </BlurFade>
         <BlurFade delay={0.5}>
           <h1 className="text-left md:text-3xl text-md text-gray-400">
-            a 14 y/o programmer who likes to build things.
+            a 15 y/o programmer who likes to build things.
           </h1>
         </BlurFade>
       </div>
