@@ -1,9 +1,11 @@
 import { auth } from "@/auth";
+import { del, list, put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
 
 const DATA_FILE = path.join(process.cwd(), "guestbook.json");
+const GUESTBOOK_PREFIX = "guestbook/entries/";
 
 interface GuestbookEntry {
   id: string;
@@ -15,6 +17,22 @@ interface GuestbookEntry {
 }
 
 async function readEntries(): Promise<GuestbookEntry[]> {
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const { blobs } = await list({ prefix: GUESTBOOK_PREFIX });
+
+    const entries = await Promise.all(
+      blobs.map(async (blob) => {
+        const response = await fetch(blob.url, { cache: "no-store" });
+        return (await response.json()) as GuestbookEntry;
+      })
+    );
+
+    return entries.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
   try {
     const data = await fs.readFile(DATA_FILE, "utf-8");
     return JSON.parse(data);
@@ -24,6 +42,30 @@ async function readEntries(): Promise<GuestbookEntry[]> {
 }
 
 async function writeEntries(entries: GuestbookEntry[]) {
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const { blobs } = await list({ prefix: GUESTBOOK_PREFIX });
+
+    if (blobs.length > 0) {
+      await del(blobs.map((blob) => blob.url));
+    }
+
+    await Promise.all(
+      entries.map((entry) =>
+        put(
+          `${GUESTBOOK_PREFIX}${String(9_999_999_999_999 - new Date(entry.createdAt).getTime()).padStart(13, "0")}-${entry.id}.json`,
+          JSON.stringify(entry),
+          {
+            access: "public",
+            addRandomSuffix: false,
+            contentType: "application/json",
+          }
+        )
+      )
+    );
+
+    return;
+  }
+
   await fs.writeFile(DATA_FILE, JSON.stringify(entries, null, 2));
 }
 
