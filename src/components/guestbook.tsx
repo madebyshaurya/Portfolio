@@ -5,7 +5,7 @@ import { useSession, signIn } from "next-auth/react"
 import Image from "next/image"
 import SignaturePad from "signature_pad"
 import confetti from "canvas-confetti"
-import { ChevronLeft, ChevronRight, PenLine, Type, Upload, RotateCcw, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, PenLine, Type, Upload, RotateCcw, X, Pencil, Trash2 } from "lucide-react"
 import {
   MorphingPopover,
   MorphingPopoverContent,
@@ -20,6 +20,7 @@ interface GuestbookEntry {
   avatar: string
   message: string
   createdAt: string
+  canManage?: boolean
   signature?: string
   signatureText?: string
 }
@@ -56,6 +57,7 @@ export function Guestbook() {
   const [showComposer, setShowComposer] = useState(false)
   const [composerPosition, setComposerPosition] = useState({ top: 0, left: 0 })
   const [errorMessage, setErrorMessage] = useState("")
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null)
 
   useEffect(() => {
     fetch("/api/guestbook")
@@ -194,6 +196,16 @@ export function Guestbook() {
     setShowComposer(false)
     setComposerStep("compose")
     setErrorMessage("")
+    setEditingEntryId(null)
+  }
+
+  const resetComposer = () => {
+    setMessage("")
+    clearSignature()
+    setSignatureMode("draw")
+    setComposerStep("compose")
+    setErrorMessage("")
+    setEditingEntryId(null)
   }
 
   const scroll = (dir: "left" | "right") => {
@@ -208,9 +220,10 @@ export function Guestbook() {
     setErrorMessage("")
     try {
       const res = await fetch("/api/guestbook", {
-        method: "POST",
+        method: editingEntryId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          id: editingEntryId || undefined,
           message: message.trim(),
           signature:
             signatureMode === "draw" || signatureMode === "upload"
@@ -223,12 +236,13 @@ export function Guestbook() {
 
       if (res.ok) {
         const entry = await res.json()
-        setEntries((prev) => [entry, ...prev])
-        setMessage("")
-        clearSignature()
-        setSignatureMode("draw")
+        setEntries((prev) =>
+          editingEntryId
+            ? prev.map((item) => (item.id === editingEntryId ? { ...entry, canManage: true } : item))
+            : [{ ...entry, canManage: true }, ...prev]
+        )
+        resetComposer()
         setShowComposer(false)
-        setComposerStep("compose")
         scrollRef.current?.scrollTo({ left: 0, behavior: "smooth" })
         void fetch("/api/guestbook", { cache: "no-store" })
           .then((r) => r.json())
@@ -283,6 +297,54 @@ export function Guestbook() {
     (signatureMode === "type"
       ? typedSignature.trim().length > 0
       : signature.length > 0)
+
+  const openEdit = (entry: GuestbookEntry) => {
+    setEditingEntryId(entry.id)
+    setMessage(entry.message)
+    setErrorMessage("")
+    setComposerStep("compose")
+    setShowComposer(true)
+
+    if (entry.signatureText) {
+      setSignatureMode("type")
+      setTypedSignature(entry.signatureText)
+      setSignature("")
+      return
+    }
+
+    if (entry.signature) {
+      setSignatureMode("upload")
+      setSignature(entry.signature)
+      setTypedSignature("")
+      return
+    }
+
+    setSignatureMode("draw")
+    setSignature("")
+    setTypedSignature("")
+  }
+
+  const handleDelete = async (entry: GuestbookEntry) => {
+    if (!window.confirm("Delete this guestbook note?")) return
+
+    try {
+      const res = await fetch("/api/guestbook", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        window.alert(data?.error || "Couldn’t delete note.")
+        return
+      }
+
+      setEntries((prev) => prev.filter((item) => item.id !== entry.id))
+    } catch {
+      window.alert("Couldn’t delete note.")
+    }
+  }
 
   return (
     <section>
@@ -373,10 +435,12 @@ export function Guestbook() {
                       <div className="mb-4 flex items-start justify-between gap-4">
                         <div>
                           <h3 className="text-[15px] font-medium text-zinc-900">
-                            sign the guestbook
+                            {editingEntryId ? "edit note" : "sign the guestbook"}
                           </h3>
                           <p className="mt-1 text-xs text-zinc-400">
-                            draw, type, or import a signature.
+                            {editingEntryId
+                              ? "update your note or signature."
+                              : "draw, type, or import a signature."}
                           </p>
                         </div>
                         <button
@@ -517,7 +581,7 @@ export function Guestbook() {
                           disabled={!canPreview}
                           className="rounded-full bg-zinc-950 px-4 py-2 text-xs text-white transition-opacity duration-150 disabled:opacity-40"
                         >
-                          done
+                          {editingEntryId ? "review" : "done"}
                         </button>
                       </div>
                     </>
@@ -589,7 +653,7 @@ export function Guestbook() {
                           disabled={submitting}
                           className="rounded-full bg-zinc-950 px-4 py-2 text-xs text-white transition-opacity duration-150 disabled:opacity-50"
                         >
-                          {submitting ? "posting..." : "post note"}
+                          {submitting ? "saving..." : editingEntryId ? "save note" : "post note"}
                         </button>
                       </div>
                     </>
@@ -640,6 +704,24 @@ export function Guestbook() {
                   {timeAgo(entry.createdAt)}
                 </span>
               </div>
+              {entry.canManage ? (
+                <div className="mt-2 flex items-center gap-1">
+                  <button
+                    onClick={() => openEdit(entry)}
+                    className="inline-flex min-h-8 items-center gap-1 rounded-full border border-zinc-200 px-2.5 text-[11px] text-zinc-400 transition-colors duration-150 hover:border-zinc-300 hover:text-zinc-700"
+                  >
+                    <Pencil className="h-3 w-3" />
+                    edit
+                  </button>
+                  <button
+                    onClick={() => void handleDelete(entry)}
+                    className="inline-flex min-h-8 items-center gap-1 rounded-full border border-zinc-200 px-2.5 text-[11px] text-zinc-400 transition-colors duration-150 hover:border-red-200 hover:text-red-500"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    delete
+                  </button>
+                </div>
+              ) : null}
               <p className="relative z-10 mt-2.5 text-sm leading-snug text-zinc-600">
                 {entry.message}
               </p>
