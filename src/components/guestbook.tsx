@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState, useEffect, useCallback } from "react"
-import { useSession, signIn } from "next-auth/react"
+import { useSession, signIn, signOut } from "next-auth/react"
 import Image from "next/image"
 import SignaturePad from "signature_pad"
 import confetti from "canvas-confetti"
@@ -338,7 +338,12 @@ export function Guestbook() {
             </div>
           </div>
           {session?.user ? (
-            <div className="hidden items-center rounded-full border border-zinc-200 bg-zinc-50/70 p-1 sm:inline-flex">
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              title="sign out"
+              className="hidden items-center rounded-full border border-zinc-200 bg-zinc-50/70 p-1 transition-colors duration-150 hover:border-zinc-300 hover:bg-white sm:inline-flex"
+            >
               {session.user.image ? (
                 <Image
                   src={session.user.image}
@@ -348,7 +353,7 @@ export function Guestbook() {
                   className="rounded-full"
                 />
               ) : null}
-            </div>
+            </button>
           ) : null}
         </div>
 
