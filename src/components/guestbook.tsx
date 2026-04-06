@@ -5,7 +5,7 @@ import { useSession, signIn } from "next-auth/react"
 import Image from "next/image"
 import SignaturePad from "signature_pad"
 import confetti from "canvas-confetti"
-import { ChevronLeft, ChevronRight, PenLine, Type, Upload, RotateCcw, X, Pencil, Trash2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, PenLine, Type, Upload, RotateCcw, X, Trash2 } from "lucide-react"
 import {
   MorphingPopover,
   MorphingPopoverContent,
@@ -57,7 +57,6 @@ export function Guestbook() {
   const [showComposer, setShowComposer] = useState(false)
   const [composerPosition, setComposerPosition] = useState({ top: 0, left: 0 })
   const [errorMessage, setErrorMessage] = useState("")
-  const [editingEntryId, setEditingEntryId] = useState<string | null>(null)
 
   useEffect(() => {
     fetch("/api/guestbook")
@@ -196,7 +195,6 @@ export function Guestbook() {
     setShowComposer(false)
     setComposerStep("compose")
     setErrorMessage("")
-    setEditingEntryId(null)
   }
 
   const resetComposer = () => {
@@ -205,7 +203,6 @@ export function Guestbook() {
     setSignatureMode("draw")
     setComposerStep("compose")
     setErrorMessage("")
-    setEditingEntryId(null)
   }
 
   const scroll = (dir: "left" | "right") => {
@@ -220,10 +217,9 @@ export function Guestbook() {
     setErrorMessage("")
     try {
       const res = await fetch("/api/guestbook", {
-        method: editingEntryId ? "PUT" : "POST",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: editingEntryId || undefined,
           message: message.trim(),
           signature:
             signatureMode === "draw" || signatureMode === "upload"
@@ -236,11 +232,7 @@ export function Guestbook() {
 
       if (res.ok) {
         const entry = await res.json()
-        setEntries((prev) =>
-          editingEntryId
-            ? prev.map((item) => (item.id === editingEntryId ? { ...entry, canManage: true } : item))
-            : [{ ...entry, canManage: true }, ...prev]
-        )
+        setEntries((prev) => [{ ...entry, canManage: true }, ...prev])
         resetComposer()
         setShowComposer(false)
         scrollRef.current?.scrollTo({ left: 0, behavior: "smooth" })
@@ -298,32 +290,6 @@ export function Guestbook() {
       ? typedSignature.trim().length > 0
       : signature.length > 0)
 
-  const openEdit = (entry: GuestbookEntry) => {
-    setEditingEntryId(entry.id)
-    setMessage(entry.message)
-    setErrorMessage("")
-    setComposerStep("compose")
-    setShowComposer(true)
-
-    if (entry.signatureText) {
-      setSignatureMode("type")
-      setTypedSignature(entry.signatureText)
-      setSignature("")
-      return
-    }
-
-    if (entry.signature) {
-      setSignatureMode("upload")
-      setSignature(entry.signature)
-      setTypedSignature("")
-      return
-    }
-
-    setSignatureMode("draw")
-    setSignature("")
-    setTypedSignature("")
-  }
-
   const handleDelete = async (entry: GuestbookEntry) => {
     if (!window.confirm("Delete this guestbook note?")) return
 
@@ -372,19 +338,16 @@ export function Guestbook() {
             </div>
           </div>
           {session?.user ? (
-            <div className="hidden items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50/70 px-2.5 py-1 sm:inline-flex">
+            <div className="hidden items-center rounded-full border border-zinc-200 bg-zinc-50/70 p-1 sm:inline-flex">
               {session.user.image ? (
                 <Image
                   src={session.user.image}
                   alt={session.user.name ?? "you"}
-                  width={16}
-                  height={16}
+                  width={20}
+                  height={20}
                   className="rounded-full"
                 />
               ) : null}
-              <span className="text-[11px] text-zinc-500">
-                signed in as {session.user.name ?? "you"}
-              </span>
             </div>
           ) : null}
         </div>
@@ -453,12 +416,10 @@ export function Guestbook() {
                       <div className="mb-4 flex items-start justify-between gap-4">
                         <div>
                           <h3 className="text-[15px] font-medium text-zinc-900">
-                            {editingEntryId ? "edit note" : "sign the guestbook"}
+                            sign the guestbook
                           </h3>
                           <p className="mt-1 text-xs text-zinc-400">
-                            {editingEntryId
-                              ? "update your note or signature."
-                              : "draw, type, or import a signature."}
+                            draw, type, or import a signature.
                           </p>
                         </div>
                         <button
@@ -599,7 +560,7 @@ export function Guestbook() {
                           disabled={!canPreview}
                           className="rounded-full bg-zinc-950 px-4 py-2 text-xs text-white transition-opacity duration-150 disabled:opacity-40"
                         >
-                          {editingEntryId ? "review" : "done"}
+                          done
                         </button>
                       </div>
                     </>
@@ -671,7 +632,7 @@ export function Guestbook() {
                           disabled={submitting}
                           className="rounded-full bg-zinc-950 px-4 py-2 text-xs text-white transition-opacity duration-150 disabled:opacity-50"
                         >
-                          {submitting ? "saving..." : editingEntryId ? "save note" : "post note"}
+                          {submitting ? "posting..." : "post note"}
                         </button>
                       </div>
                     </>
@@ -725,13 +686,6 @@ export function Guestbook() {
                 </div>
                 {entry.canManage ? (
                   <div className="ml-auto flex items-center gap-1">
-                    <button
-                      onClick={() => openEdit(entry)}
-                      className="inline-flex min-h-8 items-center gap-1 rounded-full border border-zinc-200 bg-white/80 px-2.5 text-[11px] text-zinc-400 transition-colors duration-150 hover:border-zinc-300 hover:text-zinc-700"
-                    >
-                      <Pencil className="h-3 w-3" />
-                      edit
-                    </button>
                     <button
                       onClick={() => void handleDelete(entry)}
                       className="inline-flex min-h-8 items-center gap-1 rounded-full border border-zinc-200 bg-white/80 px-2.5 text-[11px] text-zinc-400 transition-colors duration-150 hover:border-red-200 hover:text-red-500"
