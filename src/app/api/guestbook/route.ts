@@ -14,6 +14,7 @@ const BLOCKED_PATTERNS = [
 ];
 const badWords = new BadWordsNext({ data: en });
 const ADMIN_USERNAMES = new Set(["madebyshaurya"]);
+const ADMIN_NAMES = new Set(["shaurya gupta"]);
 
 interface GuestbookEntry {
   id: string;
@@ -43,6 +44,21 @@ function getUsername(user: { username?: string | null }) {
 
 function isAdminUser(user: { username?: string | null }) {
   return ADMIN_USERNAMES.has(getUsername(user));
+}
+
+function isAdminSession(user: {
+  username?: string | null;
+  name?: string | null;
+  email?: string | null;
+}) {
+  const authorKey = getAuthorKey(user);
+  const normalizedName = user.name?.toLowerCase() || "";
+
+  return (
+    isAdminUser(user) ||
+    ADMIN_NAMES.has(normalizedName) ||
+    ADMIN_NAMES.has(authorKey)
+  );
 }
 
 function canManageEntry(
@@ -154,9 +170,7 @@ export async function GET() {
     const session = await auth();
     const viewerKey = session?.user ? getAuthorKey(session.user) : "";
     const viewerName = session?.user?.name || "";
-    const viewerIsAdmin = session?.user
-      ? isAdminUser(session.user as { username?: string | null })
-      : false;
+    const viewerIsAdmin = session?.user ? isAdminSession(session.user) : false;
     const entries = await readEntries();
     const response: GuestbookResponseEntry[] = entries.map(({ authorKey, ...entry }) => ({
       ...entry,
@@ -188,7 +202,7 @@ export async function POST(req: Request) {
     const authorName = session.user.name || session.user.email || "anonymous";
     const authorKey = getAuthorKey(session.user);
     const viewerName = session.user.name || "";
-    const viewerIsAdmin = isAdminUser(session.user as { username?: string | null });
+    const viewerIsAdmin = isAdminSession(session.user);
     const validation = validatePayload(message, signature, signatureText);
     if ("error" in validation) {
       return NextResponse.json({ error: validation.error }, { status: validation.status });
@@ -277,7 +291,7 @@ export async function PUT(req: Request) {
 
     const authorKey = getAuthorKey(session.user);
     const viewerName = session.user.name || "";
-    const viewerIsAdmin = isAdminUser(session.user as { username?: string | null });
+    const viewerIsAdmin = isAdminSession(session.user);
     if (!canManageEntry(existing, authorKey, viewerName, viewerIsAdmin)) {
       return NextResponse.json({ error: "You can’t edit this note." }, { status: 403 });
     }
@@ -334,7 +348,7 @@ export async function DELETE(req: Request) {
 
     const authorKey = getAuthorKey(session.user);
     const viewerName = session.user.name || "";
-    const viewerIsAdmin = isAdminUser(session.user as { username?: string | null });
+    const viewerIsAdmin = isAdminSession(session.user);
     if (!canManageEntry(existing, authorKey, viewerName, viewerIsAdmin)) {
       return NextResponse.json({ error: "You can’t delete this note." }, { status: 403 });
     }
