@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { list, put } from "@vercel/blob";
+import { get, list, put } from "@vercel/blob";
 import BadWordsNext from "bad-words-next";
 import en from "bad-words-next/lib/en";
 import { NextResponse } from "next/server";
@@ -33,8 +33,15 @@ async function readEntries(): Promise<GuestbookEntry[]> {
 
     const entries = await Promise.all(
       blobs.map(async (blob) => {
-        const response = await fetch(blob.url, { cache: "no-store" });
-        return (await response.json()) as GuestbookEntry;
+        const result = await get(blob.pathname, {
+          access: "private",
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+          useCache: false,
+        });
+        if (!result || result.statusCode !== 200) {
+          throw new Error(`Missing guestbook blob: ${blob.pathname}`);
+        }
+        return (await new Response(result.stream).json()) as GuestbookEntry;
       })
     );
 
@@ -60,7 +67,7 @@ async function writeEntries(entries: GuestbookEntry[]) {
           `${GUESTBOOK_PREFIX}${String(9_999_999_999_999 - new Date(entry.createdAt).getTime()).padStart(13, "0")}-${entry.id}.json`,
           JSON.stringify(entry),
           {
-            access: "public",
+            access: "private",
             addRandomSuffix: false,
             contentType: "application/json",
           }
