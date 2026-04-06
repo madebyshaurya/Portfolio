@@ -350,25 +350,43 @@ export function Guestbook() {
     <section>
       <div className="mb-5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-xs uppercase tracking-wide text-zinc-400">
-            Guestbook
-          </h2>
-          <div className="flex gap-1">
-            <button
-              onClick={() => scroll("left")}
-              disabled={!canScrollLeft}
-              className="rounded-md p-1 text-zinc-300 transition-colors duration-150 hover:text-zinc-500 disabled:cursor-default disabled:opacity-30"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => scroll("right")}
-              disabled={!canScrollRight}
-              className="rounded-md p-1 text-zinc-300 transition-colors duration-150 hover:text-zinc-500 disabled:cursor-default disabled:opacity-30"
-            >
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xs uppercase tracking-wide text-zinc-400">
+              Guestbook
+            </h2>
+            <div className="flex gap-1">
+              <button
+                onClick={() => scroll("left")}
+                disabled={!canScrollLeft}
+                className="rounded-md p-1 text-zinc-300 transition-colors duration-150 hover:text-zinc-500 disabled:cursor-default disabled:opacity-30"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => scroll("right")}
+                disabled={!canScrollRight}
+                className="rounded-md p-1 text-zinc-300 transition-colors duration-150 hover:text-zinc-500 disabled:cursor-default disabled:opacity-30"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
+          {session?.user ? (
+            <div className="hidden items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50/70 px-2.5 py-1 sm:inline-flex">
+              {session.user.image ? (
+                <Image
+                  src={session.user.image}
+                  alt={session.user.name ?? "you"}
+                  width={16}
+                  height={16}
+                  className="rounded-full"
+                />
+              ) : null}
+              <span className="text-[11px] text-zinc-500">
+                signed in as {session.user.name ?? "you"}
+              </span>
+            </div>
+          ) : null}
         </div>
 
         {session ? (
@@ -687,54 +705,56 @@ export function Guestbook() {
           entries.map((entry) => (
             <div
               key={entry.id}
-              className="relative w-[220px] shrink-0 overflow-hidden rounded-xl border border-zinc-100 bg-zinc-50/50 p-4"
+              className="relative w-[300px] shrink-0 overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50/60 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-start gap-2">
                 <Image
                   src={entry.avatar}
                   alt={entry.username}
-                  width={20}
-                  height={20}
+                  width={28}
+                  height={28}
                   className="rounded-full"
                 />
-                <span className="text-xs font-medium text-zinc-500">
-                  {entry.username}
-                </span>
-                <span className="ml-auto text-[10px] tabular-nums text-zinc-300">
-                  {timeAgo(entry.createdAt)}
-                </span>
-              </div>
-              {entry.canManage ? (
-                <div className="mt-2 flex items-center gap-1">
-                  <button
-                    onClick={() => openEdit(entry)}
-                    className="inline-flex min-h-8 items-center gap-1 rounded-full border border-zinc-200 px-2.5 text-[11px] text-zinc-400 transition-colors duration-150 hover:border-zinc-300 hover:text-zinc-700"
-                  >
-                    <Pencil className="h-3 w-3" />
-                    edit
-                  </button>
-                  <button
-                    onClick={() => void handleDelete(entry)}
-                    className="inline-flex min-h-8 items-center gap-1 rounded-full border border-zinc-200 px-2.5 text-[11px] text-zinc-400 transition-colors duration-150 hover:border-red-200 hover:text-red-500"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    delete
-                  </button>
+                <div className="min-w-0">
+                  <span className="block truncate text-sm font-medium text-zinc-600">
+                    {entry.username}
+                  </span>
+                  <span className="block text-[11px] tabular-nums text-zinc-300">
+                    {timeAgo(entry.createdAt)}
+                  </span>
                 </div>
-              ) : null}
-              <p className="relative z-10 mt-2.5 text-sm leading-snug text-zinc-600">
+                {entry.canManage ? (
+                  <div className="ml-auto flex items-center gap-1">
+                    <button
+                      onClick={() => openEdit(entry)}
+                      className="inline-flex min-h-8 items-center gap-1 rounded-full border border-zinc-200 bg-white/80 px-2.5 text-[11px] text-zinc-400 transition-colors duration-150 hover:border-zinc-300 hover:text-zinc-700"
+                    >
+                      <Pencil className="h-3 w-3" />
+                      edit
+                    </button>
+                    <button
+                      onClick={() => void handleDelete(entry)}
+                      className="inline-flex min-h-8 items-center gap-1 rounded-full border border-zinc-200 bg-white/80 px-2.5 text-[11px] text-zinc-400 transition-colors duration-150 hover:border-red-200 hover:text-red-500"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      delete
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+              <p className="relative z-10 mt-4 text-[15px] leading-snug text-zinc-600">
                 {entry.message}
               </p>
               {entry.signature ? (
                 <img
                   src={entry.signature}
                   alt=""
-                  className="pointer-events-none absolute inset-x-3 bottom-2 h-12 object-contain opacity-20 mix-blend-multiply"
+                  className="pointer-events-none absolute inset-x-4 bottom-3 h-16 object-contain opacity-20 mix-blend-multiply"
                 />
               ) : null}
               {entry.signatureText ? (
                 <span
-                  className="pointer-events-none absolute bottom-2 right-3 rotate-[-4deg] text-base text-zinc-900/25"
+                  className="pointer-events-none absolute bottom-3 right-4 rotate-[-4deg] text-xl text-zinc-900/25"
                   style={{ fontFamily: "var(--font-handwritten)" }}
                 >
                   {entry.signatureText}

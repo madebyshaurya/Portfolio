@@ -36,9 +36,18 @@ function getAuthorKey(user: { name?: string | null; email?: string | null }) {
   return (user.email || user.name || "anonymous").toLowerCase();
 }
 
-function canManageEntry(entry: GuestbookEntry, viewerKey: string) {
+function canManageEntry(
+  entry: GuestbookEntry,
+  viewerKey: string,
+  viewerName?: string | null
+) {
   if (!viewerKey) return false;
-  return entry.authorKey === viewerKey || (!entry.authorKey && entry.username.toLowerCase() === viewerKey);
+  return (
+    entry.authorKey === viewerKey ||
+    (!entry.authorKey &&
+      (entry.username.toLowerCase() === viewerKey ||
+        (!!viewerName && entry.username.toLowerCase() === viewerName.toLowerCase())))
+  );
 }
 
 function getEntryPath(entry: Pick<GuestbookEntry, "createdAt" | "id">) {
@@ -133,10 +142,11 @@ export async function GET() {
   try {
     const session = await auth();
     const viewerKey = session?.user ? getAuthorKey(session.user) : "";
+    const viewerName = session?.user?.name || "";
     const entries = await readEntries();
     const response: GuestbookResponseEntry[] = entries.map(({ authorKey, ...entry }) => ({
       ...entry,
-      canManage: canManageEntry({ ...entry, authorKey }, viewerKey),
+      canManage: canManageEntry({ ...entry, authorKey }, viewerKey, viewerName),
     }));
     return NextResponse.json(response);
   } catch (error) {
@@ -158,6 +168,7 @@ export async function POST(req: Request) {
     const { message, signature, signatureText } = await req.json();
     const authorName = session.user.name || session.user.email || "anonymous";
     const authorKey = getAuthorKey(session.user);
+    const viewerName = session.user.name || "";
     const validation = validatePayload(message, signature, signatureText);
     if ("error" in validation) {
       return NextResponse.json({ error: validation.error }, { status: validation.status });
@@ -166,7 +177,7 @@ export async function POST(req: Request) {
 
     const entries = await readEntries();
     const latestByAuthor = entries.find(
-      (entry) => canManageEntry(entry, authorKey)
+      (entry) => canManageEntry(entry, authorKey, viewerName)
     );
 
     if (
@@ -181,7 +192,7 @@ export async function POST(req: Request) {
 
     const duplicate = entries.find(
       (entry) =>
-        canManageEntry(entry, authorKey) &&
+        canManageEntry(entry, authorKey, viewerName) &&
         entry.message.trim().toLowerCase() === normalizedMessage.toLowerCase() &&
         Date.now() - new Date(entry.createdAt).getTime() < DUPLICATE_WINDOW_MS
     );
@@ -245,7 +256,8 @@ export async function PUT(req: Request) {
     }
 
     const authorKey = getAuthorKey(session.user);
-    if (!canManageEntry(existing, authorKey)) {
+    const viewerName = session.user.name || "";
+    if (!canManageEntry(existing, authorKey, viewerName)) {
       return NextResponse.json({ error: "You can’t edit this note." }, { status: 403 });
     }
 
@@ -300,7 +312,8 @@ export async function DELETE(req: Request) {
     }
 
     const authorKey = getAuthorKey(session.user);
-    if (!canManageEntry(existing, authorKey)) {
+    const viewerName = session.user.name || "";
+    if (!canManageEntry(existing, authorKey, viewerName)) {
       return NextResponse.json({ error: "You can’t delete this note." }, { status: 403 });
     }
 
