@@ -14,6 +14,7 @@ interface GuestbookEntry {
   message: string;
   createdAt: string;
   signature?: string;
+  signatureText?: string;
 }
 
 async function readEntries(): Promise<GuestbookEntry[]> {
@@ -80,7 +81,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const { message, signature } = await req.json();
+  const { message, signature, signatureText } = await req.json();
   if (!message || typeof message !== "string" || message.trim().length === 0) {
     return NextResponse.json({ error: "Message required" }, { status: 400 });
   }
@@ -92,6 +93,12 @@ export async function POST(req: Request) {
   ) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
+  if (
+    signatureText !== undefined &&
+    (typeof signatureText !== "string" || signatureText.trim().length > 48)
+  ) {
+    return NextResponse.json({ error: "Invalid signature text" }, { status: 400 });
+  }
 
   const entries = await readEntries();
   const entry: GuestbookEntry = {
@@ -101,6 +108,7 @@ export async function POST(req: Request) {
     message: message.trim().slice(0, 200),
     createdAt: new Date().toISOString(),
     signature: signature || undefined,
+    signatureText: signatureText?.trim() || undefined,
   };
 
   entries.unshift(entry);

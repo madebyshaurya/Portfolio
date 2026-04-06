@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect, useCallback } from "react"
 import { useSession, signIn } from "next-auth/react"
 import Image from "next/image"
-import { ChevronLeft, ChevronRight, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, PenLine, Type, X } from "lucide-react"
 
 interface GuestbookEntry {
   id: string
@@ -12,7 +12,10 @@ interface GuestbookEntry {
   message: string
   createdAt: string
   signature?: string
+  signatureText?: string
 }
+
+type SignatureMode = "draw" | "type"
 
 function timeAgo(dateStr: string) {
   const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000)
@@ -27,16 +30,19 @@ export function Guestbook() {
   const { data: session } = useSession()
   const scrollRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const drawingRef = useRef(false)
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null)
+
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(true)
   const [entries, setEntries] = useState<GuestbookEntry[]>([])
   const [message, setMessage] = useState("")
   const [signature, setSignature] = useState("")
+  const [typedSignature, setTypedSignature] = useState("")
+  const [signatureMode, setSignatureMode] = useState<SignatureMode>("draw")
   const [submitting, setSubmitting] = useState(false)
   const [showComposer, setShowComposer] = useState(false)
-  const [isDrawing, setIsDrawing] = useState(false)
 
-  // Fetch real entries
   useEffect(() => {
     fetch("/api/guestbook")
       .then((r) => r.json())
@@ -54,43 +60,13 @@ export function Guestbook() {
   useEffect(() => {
     checkScroll()
     const el = scrollRef.current
-    if (el) {
-      el.addEventListener("scroll", checkScroll, { passive: true })
-      return () => el.removeEventListener("scroll", checkScroll)
-    }
+    if (!el) return
+    el.addEventListener("scroll", checkScroll, { passive: true })
+    return () => el.removeEventListener("scroll", checkScroll)
   }, [checkScroll])
 
-  const scroll = (dir: "left" | "right") => {
-    if (!scrollRef.current) return
-    scrollRef.current.scrollBy({ left: dir === "left" ? -240 : 240, behavior: "smooth" })
-  }
-
-  const handleSubmit = async () => {
-    if (!message.trim() || submitting) return
-    setSubmitting(true)
-    try {
-      const res = await fetch("/api/guestbook", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: message.trim(),
-          signature: signature || undefined,
-        }),
-      })
-      if (res.ok) {
-        const entry = await res.json()
-        setEntries((prev) => [entry, ...prev])
-        setMessage("")
-        setSignature("")
-        setShowComposer(false)
-      }
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  useEffect(() => {
-    if (!showComposer || !canvasRef.current) return
+  const setupCanvas = useCallback(() => {
+    if (!canvasRef.current) return
     const canvas = canvasRef.current
     const rect = canvas.getBoundingClientRect()
     const dpr = window.devicePixelRatio || 1
@@ -104,9 +80,15 @@ export function Guestbook() {
     ctx.scale(dpr, dpr)
     ctx.lineCap = "round"
     ctx.lineJoin = "round"
-    ctx.strokeStyle = "rgba(24,24,27,0.9)"
-    ctx.lineWidth = 2
-  }, [showComposer])
+    ctx.strokeStyle = "rgba(24,24,27,0.92)"
+    ctx.lineWidth = 2.2
+  }, [])
+
+  useEffect(() => {
+    if (showComposer && signatureMode === "draw") {
+      setupCanvas()
+    }
+  }, [showComposer, signatureMode, setupCanvas])
 
   const getPoint = (event: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
@@ -119,61 +101,112 @@ export function Guestbook() {
   }
 
   const startDrawing = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    const ctx = canvasRef.current?.getContext("2d")
+    const canvas = canvasRef.current
+    const ctx = canvas?.getContext("2d")
     const point = getPoint(event)
-    if (!ctx || !point) return
-    setIsDrawing(true)
+    if (!canvas || !ctx || !point) return
+
+    canvas.setPointerCapture(event.pointerId)
+    drawingRef.current = true
+    lastPointRef.current = point
     ctx.beginPath()
     ctx.moveTo(point.x, point.y)
   }
 
   const draw = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return
+    if (!drawingRef.current) return
     const ctx = canvasRef.current?.getContext("2d")
     const point = getPoint(event)
-    if (!ctx || !point) return
-    ctx.lineTo(point.x, point.y)
+    const lastPoint = lastPointRef.current
+    if (!ctx || !point || !lastPoint) return
+
+    const midX = (lastPoint.x + point.x) / 2
+    const midY = (lastPoint.y + point.y) / 2
+    ctx.quadraticCurveTo(lastPoint.x, lastPoint.y, midX, midY)
     ctx.stroke()
+    lastPointRef.current = point
   }
 
   const stopDrawing = () => {
-    if (!isDrawing || !canvasRef.current) return
-    setIsDrawing(false)
+    if (!drawingRef.current || !canvasRef.current) return
+    drawingRef.current = false
+    lastPointRef.current = null
     setSignature(canvasRef.current.toDataURL("image/png"))
   }
 
   const clearSignature = () => {
     const canvas = canvasRef.current
     const ctx = canvas?.getContext("2d")
-    if (!canvas || !ctx) return
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    if (canvas && ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+    }
     setSignature("")
+    setTypedSignature("")
+  }
+
+  const closeComposer = () => {
+    setShowComposer(false)
+  }
+
+  const scroll = (dir: "left" | "right") => {
+    if (!scrollRef.current) return
+    scrollRef.current.scrollBy({ left: dir === "left" ? -240 : 240, behavior: "smooth" })
+  }
+
+  const handleSubmit = async () => {
+    if (!message.trim() || submitting) return
+
+    setSubmitting(true)
+    try {
+      const res = await fetch("/api/guestbook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: message.trim(),
+          signature: signatureMode === "draw" ? signature || undefined : undefined,
+          signatureText:
+            signatureMode === "type" ? typedSignature.trim() || undefined : undefined,
+        }),
+      })
+
+      if (res.ok) {
+        const entry = await res.json()
+        setEntries((prev) => [entry, ...prev])
+        setMessage("")
+        setSignature("")
+        setTypedSignature("")
+        setShowComposer(false)
+      }
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-5">
+      <div className="mb-5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-xs text-zinc-400 tracking-wide uppercase">
+          <h2 className="text-xs uppercase tracking-wide text-zinc-400">
             Guestbook
           </h2>
           <div className="flex gap-1">
             <button
               onClick={() => scroll("left")}
               disabled={!canScrollLeft}
-              className="p-1 rounded-md text-zinc-300 transition-colors duration-150 hover:text-zinc-500 disabled:opacity-30 disabled:cursor-default"
+              className="rounded-md p-1 text-zinc-300 transition-colors duration-150 hover:text-zinc-500 disabled:cursor-default disabled:opacity-30"
             >
-              <ChevronLeft className="w-3.5 h-3.5" />
+              <ChevronLeft className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={() => scroll("right")}
               disabled={!canScrollRight}
-              className="p-1 rounded-md text-zinc-300 transition-colors duration-150 hover:text-zinc-500 disabled:opacity-30 disabled:cursor-default"
+              className="rounded-md p-1 text-zinc-300 transition-colors duration-150 hover:text-zinc-500 disabled:cursor-default disabled:opacity-30"
             >
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
+
         {session ? (
           <div className="flex items-center gap-2">
             <input
@@ -183,12 +216,12 @@ export function Guestbook() {
               onKeyDown={(e) => e.key === "Enter" && setShowComposer(true)}
               placeholder="leave a note..."
               maxLength={200}
-              className="text-xs px-3 py-1.5 rounded-full border border-zinc-200 bg-transparent outline-none focus:border-zinc-300 transition-colors duration-200 w-36 sm:w-48 placeholder:text-zinc-300"
+              className="w-36 rounded-full border border-zinc-200 bg-transparent px-3 py-1.5 text-xs text-zinc-700 outline-none transition-colors duration-200 placeholder:text-zinc-300 focus:border-zinc-300 sm:w-48"
             />
             <button
               onClick={() => setShowComposer(true)}
               disabled={!message.trim()}
-              className="text-xs text-zinc-400 px-3 py-1.5 rounded-full border border-zinc-200 transition-colors duration-200 hover:border-zinc-300 hover:text-zinc-600 disabled:opacity-40"
+              className="rounded-full border border-zinc-200 px-3 py-1.5 text-xs text-zinc-400 transition-colors duration-200 hover:border-zinc-300 hover:text-zinc-600 disabled:opacity-40"
             >
               sign
             </button>
@@ -196,7 +229,7 @@ export function Guestbook() {
         ) : (
           <button
             onClick={() => signIn("github")}
-            className="text-xs text-zinc-400 px-3 py-1.5 rounded-full border border-zinc-200 transition-colors duration-200 hover:border-zinc-300 hover:text-zinc-600"
+            className="rounded-full border border-zinc-200 px-3 py-1.5 text-xs text-zinc-400 transition-colors duration-200 hover:border-zinc-300 hover:text-zinc-600"
           >
             sign with github
           </button>
@@ -205,11 +238,11 @@ export function Guestbook() {
 
       <div
         ref={scrollRef}
-        className="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2 scrollbar-hide"
+        className="scrollbar-hide -mx-2 flex gap-3 overflow-x-auto px-2 pb-2"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {entries.length === 0 ? (
-          <div className="shrink-0 w-full rounded-xl border border-zinc-100 bg-zinc-50/50 p-4">
+          <div className="w-full shrink-0 rounded-xl border border-zinc-100 bg-zinc-50/50 p-4">
             <p className="text-sm text-zinc-500">
               no notes yet. be the first to leave one.
             </p>
@@ -218,7 +251,7 @@ export function Guestbook() {
           entries.map((entry) => (
             <div
               key={entry.id}
-              className="relative shrink-0 flex flex-col gap-2.5 p-4 rounded-xl border border-zinc-100 bg-zinc-50/50 w-[220px] overflow-hidden"
+              className="relative w-[220px] shrink-0 overflow-hidden rounded-xl border border-zinc-100 bg-zinc-50/50 p-4"
             >
               <div className="flex items-center gap-2">
                 <Image
@@ -228,14 +261,14 @@ export function Guestbook() {
                   height={20}
                   className="rounded-full"
                 />
-                <span className="text-xs text-zinc-500 font-medium">
+                <span className="text-xs font-medium text-zinc-500">
                   {entry.username}
                 </span>
-                <span className="text-[10px] text-zinc-300 ml-auto tabular-nums">
+                <span className="ml-auto text-[10px] tabular-nums text-zinc-300">
                   {timeAgo(entry.createdAt)}
                 </span>
               </div>
-              <p className="text-sm text-zinc-600 leading-snug">
+              <p className="relative z-10 mt-2.5 text-sm leading-snug text-zinc-600">
                 {entry.message}
               </p>
               {entry.signature ? (
@@ -245,66 +278,125 @@ export function Guestbook() {
                   className="pointer-events-none absolute inset-x-3 bottom-2 h-12 object-contain opacity-20 mix-blend-multiply"
                 />
               ) : null}
+              {entry.signatureText ? (
+                <span
+                  className="pointer-events-none absolute bottom-2 right-3 rotate-[-4deg] text-base text-zinc-900/25"
+                  style={{ fontFamily: "var(--font-handwritten)" }}
+                >
+                  {entry.signatureText}
+                </span>
+              ) : null}
             </div>
           ))
         )}
       </div>
 
       {showComposer ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-5 shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
-            <div className="mb-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/10 p-4 backdrop-blur-[6px]">
+          <div className="w-full max-w-lg rounded-[28px] border border-zinc-200/90 bg-white/95 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.10)]">
+            <div className="mb-5 flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-sm font-medium text-zinc-800">add a note</h3>
-                <p className="mt-1 text-xs text-zinc-400">
-                  draw a quick signature if you want.
+                <h3 className="text-base font-medium text-zinc-900">sign the guestbook</h3>
+                <p className="mt-1 text-sm text-zinc-400">
+                  add a note, then draw or type a signature.
                 </p>
               </div>
               <button
-                onClick={() => setShowComposer(false)}
-                className="rounded-full p-1 text-zinc-300 transition-colors duration-150 hover:text-zinc-500"
+                onClick={closeComposer}
+                className="rounded-full p-1.5 text-zinc-300 transition-colors duration-150 hover:text-zinc-500"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="rounded-xl border border-zinc-100 bg-zinc-50/50 p-3">
-              <p className="text-sm text-zinc-600 leading-snug">{message}</p>
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50/60 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+              <p className="text-base leading-relaxed text-zinc-700">{message}</p>
             </div>
 
-            <div className="mt-4">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs uppercase tracking-wide text-zinc-400">
-                  signature
-                </span>
-                <button
-                  onClick={clearSignature}
-                  className="text-xs text-zinc-400 transition-colors duration-150 hover:text-zinc-600"
-                >
-                  clear
-                </button>
-              </div>
-              <canvas
-                ref={canvasRef}
-                className="h-36 w-full rounded-xl border border-zinc-200 bg-white touch-none"
-                onPointerDown={startDrawing}
-                onPointerMove={draw}
-                onPointerUp={stopDrawing}
-                onPointerLeave={stopDrawing}
-              />
-            </div>
-
-            <div className="mt-4 flex justify-end gap-2">
+            <div className="mt-5 flex items-center justify-between">
+              <span className="text-[11px] uppercase tracking-[0.18em] text-zinc-400">
+                Signature
+              </span>
               <button
-                onClick={() => setShowComposer(false)}
-                className="rounded-full border border-zinc-200 px-3 py-1.5 text-xs text-zinc-400 transition-colors duration-150 hover:border-zinc-300 hover:text-zinc-600"
+                onClick={clearSignature}
+                className="text-xs text-zinc-400 transition-colors duration-150 hover:text-zinc-600"
+              >
+                clear
+              </button>
+            </div>
+
+            <div className="mt-3 inline-flex rounded-full border border-zinc-200 bg-zinc-50 p-1">
+              <button
+                onClick={() => setSignatureMode("draw")}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-colors duration-150 ${
+                  signatureMode === "draw"
+                    ? "bg-white text-zinc-900 shadow-sm"
+                    : "text-zinc-400 hover:text-zinc-600"
+                }`}
+              >
+                <PenLine className="h-3.5 w-3.5" />
+                draw
+              </button>
+              <button
+                onClick={() => setSignatureMode("type")}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-colors duration-150 ${
+                  signatureMode === "type"
+                    ? "bg-white text-zinc-900 shadow-sm"
+                    : "text-zinc-400 hover:text-zinc-600"
+                }`}
+              >
+                <Type className="h-3.5 w-3.5" />
+                type
+              </button>
+            </div>
+
+            {signatureMode === "draw" ? (
+              <div className="mt-4 overflow-hidden rounded-[24px] border border-zinc-200 bg-white">
+                <div className="border-b border-zinc-100 bg-[linear-gradient(to_bottom,transparent_95%,rgba(0,0,0,0.03)_95%)] bg-[length:100%_28px] px-4 py-3">
+                  <canvas
+                    ref={canvasRef}
+                    className="h-40 w-full touch-none"
+                    onPointerDown={startDrawing}
+                    onPointerMove={draw}
+                    onPointerUp={stopDrawing}
+                    onPointerCancel={stopDrawing}
+                    onPointerLeave={stopDrawing}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 rounded-[24px] border border-zinc-200 bg-white p-4">
+                <input
+                  type="text"
+                  value={typedSignature}
+                  onChange={(e) => setTypedSignature(e.target.value)}
+                  placeholder="type your signature"
+                  maxLength={48}
+                  className="w-full border-0 bg-transparent text-2xl text-zinc-900 outline-none placeholder:text-zinc-300"
+                  style={{ fontFamily: "var(--font-handwritten)" }}
+                />
+                <div className="mt-4 rounded-2xl bg-zinc-50/70 px-4 py-5">
+                  <span
+                    className="block min-h-10 text-3xl text-zinc-900/70"
+                    style={{ fontFamily: "var(--font-handwritten)" }}
+                  >
+                    {typedSignature || "your signature"}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={closeComposer}
+                className="rounded-full border border-zinc-200 px-4 py-2 text-xs text-zinc-400 transition-colors duration-150 hover:border-zinc-300 hover:text-zinc-600"
               >
                 cancel
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="rounded-full border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-xs text-white transition-opacity duration-150 disabled:opacity-50"
+                className="rounded-full bg-zinc-950 px-4 py-2 text-xs text-white transition-opacity duration-150 disabled:opacity-50"
               >
                 {submitting ? "posting..." : "post note"}
               </button>

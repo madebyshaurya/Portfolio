@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Rock_Salt } from "next/font/google";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Providers } from "@/components/providers";
@@ -31,6 +32,12 @@ const editorialNew = localFont({
   variable: "--font-editorial",
 });
 
+const rockSalt = Rock_Salt({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-handwritten",
+});
+
 export const metadata: Metadata = {
   title: "Shaurya Gupta",
   description: "Builder. 15. Toronto.",
@@ -44,7 +51,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${GeistSans.variable} ${GeistMono.variable} ${editorialNew.variable} h-full antialiased`}
+      className={`${GeistSans.variable} ${GeistMono.variable} ${editorialNew.variable} ${rockSalt.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
