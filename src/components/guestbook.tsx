@@ -13,16 +13,6 @@ interface GuestbookEntry {
   createdAt: string
 }
 
-const demoEntries: GuestbookEntry[] = [
-  { id: "d1", username: "rauchg", avatar: "https://avatars.githubusercontent.com/rauchg", message: "ship it 🚀", createdAt: "2025-04-01" },
-  { id: "d2", username: "shrutikapoor08", avatar: "https://avatars.githubusercontent.com/shrutikapoor08", message: "love seeing young builders ship real stuff!", createdAt: "2025-03-28" },
-  { id: "d3", username: "t3dotgg", avatar: "https://avatars.githubusercontent.com/t3dotgg", message: "this portfolio is clean", createdAt: "2025-03-25" },
-  { id: "d4", username: "shadcn", avatar: "https://avatars.githubusercontent.com/shadcn", message: "nice design system choices", createdAt: "2025-03-20" },
-  { id: "d5", username: "leerob", avatar: "https://avatars.githubusercontent.com/leerob", message: "the mixed font thing is a vibe", createdAt: "2025-03-18" },
-  { id: "d6", username: "twostraws", avatar: "https://avatars.githubusercontent.com/twostraws", message: "fizzix was a great SSC entry.", createdAt: "2025-03-15" },
-  { id: "d7", username: "dris-e", avatar: "https://avatars.githubusercontent.com/dris-e", message: "15 and shipping like this? respect.", createdAt: "2025-03-10" },
-]
-
 function timeAgo(dateStr: string) {
   const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000)
   if (days === 0) return "today"
@@ -37,7 +27,7 @@ export function Guestbook() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(true)
-  const [entries, setEntries] = useState<GuestbookEntry[]>(demoEntries)
+  const [entries, setEntries] = useState<GuestbookEntry[]>([])
   const [message, setMessage] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
@@ -45,11 +35,7 @@ export function Guestbook() {
   useEffect(() => {
     fetch("/api/guestbook")
       .then((r) => r.json())
-      .then((data: GuestbookEntry[]) => {
-        if (data.length > 0) {
-          setEntries(data)
-        }
-      })
+      .then((data: GuestbookEntry[]) => setEntries(data))
       .catch(() => {})
   }, [])
 
@@ -151,31 +137,39 @@ export function Guestbook() {
         className="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2 scrollbar-hide"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        {entries.map((entry) => (
-          <div
-            key={entry.id}
-            className="shrink-0 flex flex-col gap-2.5 p-4 rounded-xl border border-zinc-100 bg-zinc-50/50 w-[220px]"
-          >
-            <div className="flex items-center gap-2">
-              <Image
-                src={entry.avatar}
-                alt={entry.username}
-                width={20}
-                height={20}
-                className="rounded-full"
-              />
-              <span className="text-xs text-zinc-500 font-medium">
-                {entry.username}
-              </span>
-              <span className="text-[10px] text-zinc-300 ml-auto tabular-nums">
-                {timeAgo(entry.createdAt)}
-              </span>
-            </div>
-            <p className="text-sm text-zinc-600 leading-snug">
-              {entry.message}
+        {entries.length === 0 ? (
+          <div className="shrink-0 w-full rounded-xl border border-zinc-100 bg-zinc-50/50 p-4">
+            <p className="text-sm text-zinc-500">
+              no notes yet. be the first to leave one.
             </p>
           </div>
-        ))}
+        ) : (
+          entries.map((entry) => (
+            <div
+              key={entry.id}
+              className="shrink-0 flex flex-col gap-2.5 p-4 rounded-xl border border-zinc-100 bg-zinc-50/50 w-[220px]"
+            >
+              <div className="flex items-center gap-2">
+                <Image
+                  src={entry.avatar}
+                  alt={entry.username}
+                  width={20}
+                  height={20}
+                  className="rounded-full"
+                />
+                <span className="text-xs text-zinc-500 font-medium">
+                  {entry.username}
+                </span>
+                <span className="text-[10px] text-zinc-300 ml-auto tabular-nums">
+                  {timeAgo(entry.createdAt)}
+                </span>
+              </div>
+              <p className="text-sm text-zinc-600 leading-snug">
+                {entry.message}
+              </p>
+            </div>
+          ))
+        )}
       </div>
     </section>
   )
