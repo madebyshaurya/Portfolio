@@ -1,7 +1,9 @@
 "use client"
 
 import { useEffect } from "react"
+import { ArrowUpRight } from "lucide-react"
 import { motion, stagger, useAnimate } from "motion/react"
+import { Cursor } from "@/components/motion-primitives/cursor"
 import Floating, { FloatingElement } from "@/components/ui/parallax-floating"
 
 const photos = [
@@ -28,6 +30,20 @@ export function Photos() {
       ref={scope}
       className="relative w-full h-[320px] sm:h-[380px] rounded-xl overflow-hidden bg-stone-50"
     >
+      <Cursor
+        attachToParent
+        springConfig={{ stiffness: 180, damping: 22 }}
+        variants={{
+          initial: { opacity: 0, scale: 0.85 },
+          animate: { opacity: 1, scale: 1 },
+          exit: { opacity: 0, scale: 0.85 },
+        }}
+      >
+        <div className="flex items-center gap-1 rounded-full bg-white/92 px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-zinc-700 shadow-[0_8px_24px_rgba(0,0,0,0.08)] backdrop-blur-sm">
+          view
+          <ArrowUpRight className="h-3 w-3" />
+        </div>
+      </Cursor>
       <Floating sensitivity={-0.5} easingFactor={0.04}>
         <FloatingElement depth={0.5} className="top-[5%] left-[3%]">
           <motion.img

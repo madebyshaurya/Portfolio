@@ -1,57 +1,36 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { motion, AnimatePresence } from "motion/react"
-
-function AnimatedDigit({ char, id }: { char: string; id: string }) {
-  return (
-    <span className="relative inline-flex overflow-hidden" style={{ width: char === ":" ? "0.35em" : "0.6em", height: "1em" }}>
-      <AnimatePresence mode="popLayout" initial={false}>
-        <motion.span
-          key={`${id}-${char}`}
-          initial={{ y: "80%", filter: "blur(3px)", opacity: 0 }}
-          animate={{ y: "0%", filter: "blur(0px)", opacity: 1 }}
-          exit={{ y: "-80%", filter: "blur(3px)", opacity: 0 }}
-          transition={{
-            y: { type: "spring", duration: 0.4, bounce: 0.1 },
-            filter: { duration: 0.2 },
-            opacity: { duration: 0.15 },
-          }}
-          className="absolute inset-0 flex items-center justify-center"
-        >
-          {char}
-        </motion.span>
-      </AnimatePresence>
-    </span>
-  )
-}
+import { useState, useEffect } from "react"
+import { SlidingNumber } from "@/components/motion-primitives/sliding-number"
 
 export function LiveClock() {
-  const [time, setTime] = useState("")
+  const [parts, setParts] = useState<{ hour: number; minute: number; second: number } | null>(null)
   const [period, setPeriod] = useState("")
-  const prevTime = useRef("")
 
   useEffect(() => {
     function tick() {
-      const now = new Date().toLocaleString("en-US", {
+      const now = new Intl.DateTimeFormat("en-US", {
         timeZone: "America/Toronto",
-        hour: "numeric",
+        hour: "2-digit",
         minute: "2-digit",
         second: "2-digit",
         hour12: true,
-      })
-      const [t, p] = now.split(" ")
-      setTime(t)
-      setPeriod(p)
+      }).formatToParts(new Date())
+
+      const hour = Number(now.find((part) => part.type === "hour")?.value ?? 0)
+      const minute = Number(now.find((part) => part.type === "minute")?.value ?? 0)
+      const second = Number(now.find((part) => part.type === "second")?.value ?? 0)
+      const dayPeriod = now.find((part) => part.type === "dayPeriod")?.value ?? ""
+
+      setParts({ hour, minute, second })
+      setPeriod(dayPeriod)
     }
     tick()
     const interval = setInterval(tick, 1000)
     return () => clearInterval(interval)
   }, [])
 
-  if (!time) return null
-
-  const chars = time.split("")
+  if (!parts) return null
 
   return (
     <div className="flex items-center gap-2">
@@ -66,9 +45,11 @@ export function LiveClock() {
         className="text-sm text-zinc-900 tabular-nums inline-flex"
         style={{ fontFamily: "var(--font-geist-mono)", fontVariantNumeric: "tabular-nums" }}
       >
-        {chars.map((char, i) => (
-          <AnimatedDigit key={i} char={char} id={`d${i}`} />
-        ))}
+        <SlidingNumber value={parts.hour} padStart />
+        <span className="mx-[0.08em]">:</span>
+        <SlidingNumber value={parts.minute} padStart />
+        <span className="mx-[0.08em]">:</span>
+        <SlidingNumber value={parts.second} padStart />
         <span className="text-zinc-400 ml-0.5 text-xs self-center">{period}</span>
       </span>
     </div>
