@@ -17,6 +17,9 @@ interface GuestbookEntry {
   signatureText?: string;
 }
 
+const MIN_POST_INTERVAL_MS = 30_000;
+const DUPLICATE_WINDOW_MS = 10 * 60_000;
+
 async function readEntries(): Promise<GuestbookEntry[]> {
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     const { blobs } = await list({ prefix: GUESTBOOK_PREFIX });
@@ -82,13 +85,17 @@ export async function POST(req: Request) {
   }
 
   const { message, signature, signatureText } = await req.json();
+  const normalizedMessage = typeof message === "string" ? message.trim() : "";
+  const authorName = session.user.name || session.user.email || "anonymous";
+  const authorKey = authorName.toLowerCase();
+
   if (!message || typeof message !== "string" || message.trim().length === 0) {
     return NextResponse.json({ error: "Message required" }, { status: 400 });
   }
   if (
     signature !== undefined &&
     (typeof signature !== "string" ||
-      !signature.startsWith("data:image/png;base64,") ||
+      !/^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(signature) ||
       signature.length > 250_000)
   ) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
@@ -101,11 +108,39 @@ export async function POST(req: Request) {
   }
 
   const entries = await readEntries();
+  const latestByAuthor = entries.find(
+    (entry) => entry.username.toLowerCase() === authorKey
+  );
+
+  if (
+    latestByAuthor &&
+    Date.now() - new Date(latestByAuthor.createdAt).getTime() < MIN_POST_INTERVAL_MS
+  ) {
+    return NextResponse.json(
+      { error: "Please wait a bit before posting again." },
+      { status: 429 }
+    );
+  }
+
+  const duplicate = entries.find(
+    (entry) =>
+      entry.username.toLowerCase() === authorKey &&
+      entry.message.trim().toLowerCase() === normalizedMessage.toLowerCase() &&
+      Date.now() - new Date(entry.createdAt).getTime() < DUPLICATE_WINDOW_MS
+  );
+
+  if (duplicate) {
+    return NextResponse.json(
+      { error: "That note was already posted recently." },
+      { status: 409 }
+    );
+  }
+
   const entry: GuestbookEntry = {
     id: Date.now().toString(36),
-    username: session.user.name || "anonymous",
+    username: authorName,
     avatar: session.user.image || "",
-    message: message.trim().slice(0, 200),
+    message: normalizedMessage.slice(0, 200),
     createdAt: new Date().toISOString(),
     signature: signature || undefined,
     signatureText: signatureText?.trim() || undefined,

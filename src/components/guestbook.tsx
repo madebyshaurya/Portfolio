@@ -4,6 +4,7 @@ import { useRef, useState, useEffect, useCallback } from "react"
 import { useSession, signIn } from "next-auth/react"
 import Image from "next/image"
 import SignaturePad from "signature_pad"
+import confetti from "canvas-confetti"
 import { ChevronLeft, ChevronRight, PenLine, Type, Upload, RotateCcw, X } from "lucide-react"
 import {
   MorphingPopover,
@@ -54,6 +55,7 @@ export function Guestbook() {
   const [submitting, setSubmitting] = useState(false)
   const [showComposer, setShowComposer] = useState(false)
   const [composerPosition, setComposerPosition] = useState({ top: 0, left: 0 })
+  const [errorMessage, setErrorMessage] = useState("")
 
   useEffect(() => {
     fetch("/api/guestbook")
@@ -191,6 +193,7 @@ export function Guestbook() {
   const closeComposer = () => {
     setShowComposer(false)
     setComposerStep("compose")
+    setErrorMessage("")
   }
 
   const scroll = (dir: "left" | "right") => {
@@ -202,6 +205,7 @@ export function Guestbook() {
     if (!message.trim() || submitting) return
 
     setSubmitting(true)
+    setErrorMessage("")
     try {
       const res = await fetch("/api/guestbook", {
         method: "POST",
@@ -225,6 +229,37 @@ export function Guestbook() {
         setSignatureMode("draw")
         setShowComposer(false)
         setComposerStep("compose")
+        scrollRef.current?.scrollTo({ left: 0, behavior: "smooth" })
+        void fetch("/api/guestbook", { cache: "no-store" })
+          .then((r) => r.json())
+          .then((data: GuestbookEntry[]) => setEntries(data))
+          .catch(() => {})
+
+        confetti({
+          particleCount: 32,
+          spread: 58,
+          startVelocity: 24,
+          gravity: 0.88,
+          scalar: 0.8,
+          ticks: 180,
+          origin: { x: 0.88, y: 0.22 },
+          colors: ["#18181b", "#71717a", "#d4d4d8", "#f4f4f5"],
+          shapes: ["circle"],
+        })
+        confetti({
+          particleCount: 18,
+          spread: 42,
+          startVelocity: 18,
+          gravity: 1.05,
+          scalar: 0.6,
+          ticks: 140,
+          origin: { x: 0.82, y: 0.18 },
+          colors: ["#18181b", "#a1a1aa", "#fafafa"],
+          shapes: ["square"],
+        })
+      } else {
+        const data = await res.json().catch(() => null)
+        setErrorMessage(data?.error || "Couldn’t post note.")
       }
     } finally {
       setSubmitting(false)
@@ -449,6 +484,11 @@ export function Guestbook() {
                       ) : null}
 
                       <div className="mt-4 flex justify-end gap-2">
+                        {errorMessage ? (
+                          <p className="mr-auto self-center text-[11px] text-red-500">
+                            {errorMessage}
+                          </p>
+                        ) : null}
                         <button
                           onClick={closeComposer}
                           className="rounded-full border border-zinc-200 px-4 py-2 text-xs text-zinc-400 transition-colors duration-150 hover:border-zinc-300 hover:text-zinc-600"
@@ -535,6 +575,11 @@ export function Guestbook() {
                           {submitting ? "posting..." : "post note"}
                         </button>
                       </div>
+                      {errorMessage ? (
+                        <p className="mt-3 text-[11px] text-red-500">
+                          {errorMessage}
+                        </p>
+                      ) : null}
                     </>
                   )}
                 </div>
