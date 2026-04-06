@@ -37,6 +37,7 @@ function timeAgo(dateStr: string) {
 export function Guestbook() {
   const { data: session } = useSession()
   const scrollRef = useRef<HTMLDivElement>(null)
+  const composerAnchorRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawingRef = useRef(false)
   const lastPointRef = useRef<{ x: number; y: number } | null>(null)
@@ -51,6 +52,7 @@ export function Guestbook() {
   const [composerStep, setComposerStep] = useState<ComposerStep>("compose")
   const [submitting, setSubmitting] = useState(false)
   const [showComposer, setShowComposer] = useState(false)
+  const [composerPosition, setComposerPosition] = useState({ top: 0, left: 0 })
 
   useEffect(() => {
     fetch("/api/guestbook")
@@ -98,6 +100,40 @@ export function Guestbook() {
       setupCanvas()
     }
   }, [showComposer, signatureMode, setupCanvas])
+
+  useEffect(() => {
+    if (!showComposer || !composerAnchorRef.current) return
+
+    const updatePosition = () => {
+      const rect = composerAnchorRef.current?.getBoundingClientRect()
+      if (!rect) return
+
+      const width = composerStep === "compose" ? 448 : 512
+      const estimatedHeight = composerStep === "compose" ? 420 : 340
+      const left = Math.min(
+        Math.max(16, rect.right - width),
+        window.innerWidth - width - 16
+      )
+      const top = Math.min(
+        rect.bottom + 12,
+        window.innerHeight - estimatedHeight - 16
+      )
+
+      setComposerPosition({
+        top: Math.max(16, top),
+        left,
+      })
+    }
+
+    updatePosition()
+    window.addEventListener("resize", updatePosition)
+    window.addEventListener("scroll", updatePosition, { passive: true })
+
+    return () => {
+      window.removeEventListener("resize", updatePosition)
+      window.removeEventListener("scroll", updatePosition)
+    }
+  }, [showComposer, composerStep])
 
   const getPoint = (event: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
@@ -224,17 +260,17 @@ export function Guestbook() {
             onOpenChange={setShowComposer}
             className="justify-end"
           >
-            <div className="flex items-center gap-2">
+            <div ref={composerAnchorRef} className="flex items-center gap-2">
               <input
                 type="text"
                 value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  setComposerStep("compose")
-                  setShowComposer(true)
-                }
-              }}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    setComposerStep("compose")
+                    setShowComposer(true)
+                  }
+                }}
                 placeholder="leave a note..."
                 maxLength={200}
                 className="w-36 rounded-full border border-zinc-200 bg-transparent px-3 py-1.5 text-xs text-zinc-700 outline-none transition-colors duration-200 placeholder:text-zinc-300 focus:border-zinc-300 sm:w-48"
@@ -248,11 +284,15 @@ export function Guestbook() {
             </div>
 
             <MorphingPopoverContent
-              className={`right-0 top-[calc(100%+12px)] rounded-[28px] border-zinc-200/90 bg-white/95 p-0 shadow-[0_24px_80px_rgba(0,0,0,0.10)] backdrop-blur-xl ${
+              className={`fixed z-[80] rounded-[28px] border-zinc-200/90 bg-white/95 p-0 shadow-[0_24px_80px_rgba(0,0,0,0.10)] backdrop-blur-xl ${
                 composerStep === "compose"
                   ? "w-[min(28rem,calc(100vw-2rem))]"
                   : "w-[min(32rem,calc(100vw-2rem))]"
               }`}
+              style={{
+                top: composerPosition.top,
+                left: composerPosition.left,
+              }}
             >
               <div className="relative overflow-hidden rounded-[28px]">
                 <ProgressiveBlur

@@ -9,6 +9,7 @@ import {
   useContext,
   isValidElement,
 } from "react"
+import { createPortal } from "react-dom"
 import {
   AnimatePresence,
   MotionConfig,
@@ -176,7 +177,12 @@ function MorphingPopoverContent({
   }
 
   const ref = useRef<HTMLDivElement>(null)
+  const [mounted, setMounted] = useState(false)
   useClickOutside(ref, context.close)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (!context.isOpen) return
@@ -189,7 +195,9 @@ function MorphingPopoverContent({
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [context.isOpen, context.close])
 
-  return (
+  if (!mounted) return null
+
+  return createPortal(
     <AnimatePresence>
       {context.isOpen && (
         <motion.div
@@ -213,6 +221,8 @@ function MorphingPopoverContent({
         </motion.div>
       )}
     </AnimatePresence>
+    ,
+    document.body
   )
 }
 
