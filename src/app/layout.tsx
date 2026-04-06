@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import { Rock_Salt } from "next/font/google";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import { GeistPixelSquare } from "geist/font/pixel";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
@@ -51,7 +52,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${GeistSans.variable} ${GeistMono.variable} ${editorialNew.variable} ${rockSalt.variable} h-full antialiased`}
+      className={`${GeistSans.variable} ${GeistMono.variable} ${GeistPixelSquare.variable} ${editorialNew.variable} ${rockSalt.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
