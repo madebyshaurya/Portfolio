@@ -13,6 +13,7 @@ const BLOCKED_PATTERNS = [
   /\bf[a4@]+g+\b/i,
 ];
 const badWords = new BadWordsNext({ data: en });
+const ADMIN_USERNAMES = new Set(["madebyshaurya"]);
 
 interface GuestbookEntry {
   id: string;
@@ -36,12 +37,22 @@ function getAuthorKey(user: { name?: string | null; email?: string | null }) {
   return (user.email || user.name || "anonymous").toLowerCase();
 }
 
+function getUsername(user: { username?: string | null }) {
+  return user.username?.toLowerCase() || "";
+}
+
+function isAdminUser(user: { username?: string | null }) {
+  return ADMIN_USERNAMES.has(getUsername(user));
+}
+
 function canManageEntry(
   entry: GuestbookEntry,
   viewerKey: string,
-  viewerName?: string | null
+  viewerName?: string | null,
+  viewerIsAdmin = false
 ) {
   if (!viewerKey) return false;
+  if (viewerIsAdmin) return true;
   return (
     entry.authorKey === viewerKey ||
     (!entry.authorKey &&
@@ -143,10 +154,18 @@ export async function GET() {
     const session = await auth();
     const viewerKey = session?.user ? getAuthorKey(session.user) : "";
     const viewerName = session?.user?.name || "";
+    const viewerIsAdmin = session?.user
+      ? isAdminUser(session.user as { username?: string | null })
+      : false;
     const entries = await readEntries();
     const response: GuestbookResponseEntry[] = entries.map(({ authorKey, ...entry }) => ({
       ...entry,
-      canManage: canManageEntry({ ...entry, authorKey }, viewerKey, viewerName),
+      canManage: canManageEntry(
+        { ...entry, authorKey },
+        viewerKey,
+        viewerName,
+        viewerIsAdmin
+      ),
     }));
     return NextResponse.json(response);
   } catch (error) {
@@ -169,6 +188,7 @@ export async function POST(req: Request) {
     const authorName = session.user.name || session.user.email || "anonymous";
     const authorKey = getAuthorKey(session.user);
     const viewerName = session.user.name || "";
+    const viewerIsAdmin = isAdminUser(session.user as { username?: string | null });
     const validation = validatePayload(message, signature, signatureText);
     if ("error" in validation) {
       return NextResponse.json({ error: validation.error }, { status: validation.status });
@@ -177,7 +197,7 @@ export async function POST(req: Request) {
 
     const entries = await readEntries();
     const latestByAuthor = entries.find(
-      (entry) => canManageEntry(entry, authorKey, viewerName)
+      (entry) => canManageEntry(entry, authorKey, viewerName, viewerIsAdmin)
     );
 
     if (
@@ -192,7 +212,7 @@ export async function POST(req: Request) {
 
     const duplicate = entries.find(
       (entry) =>
-        canManageEntry(entry, authorKey, viewerName) &&
+        canManageEntry(entry, authorKey, viewerName, viewerIsAdmin) &&
         entry.message.trim().toLowerCase() === normalizedMessage.toLowerCase() &&
         Date.now() - new Date(entry.createdAt).getTime() < DUPLICATE_WINDOW_MS
     );
@@ -257,7 +277,8 @@ export async function PUT(req: Request) {
 
     const authorKey = getAuthorKey(session.user);
     const viewerName = session.user.name || "";
-    if (!canManageEntry(existing, authorKey, viewerName)) {
+    const viewerIsAdmin = isAdminUser(session.user as { username?: string | null });
+    if (!canManageEntry(existing, authorKey, viewerName, viewerIsAdmin)) {
       return NextResponse.json({ error: "You can’t edit this note." }, { status: 403 });
     }
 
@@ -313,7 +334,8 @@ export async function DELETE(req: Request) {
 
     const authorKey = getAuthorKey(session.user);
     const viewerName = session.user.name || "";
-    if (!canManageEntry(existing, authorKey, viewerName)) {
+    const viewerIsAdmin = isAdminUser(session.user as { username?: string | null });
+    if (!canManageEntry(existing, authorKey, viewerName, viewerIsAdmin)) {
       return NextResponse.json({ error: "You can’t delete this note." }, { status: 403 });
     }
 
