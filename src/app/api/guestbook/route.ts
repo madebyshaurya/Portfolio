@@ -115,7 +115,7 @@ async function readEntries(): Promise<GuestbookEntry[]> {
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     const { blobs } = await list({ prefix: GUESTBOOK_PREFIX });
 
-    const entries = await Promise.all(
+    const settled = await Promise.allSettled(
       blobs.map(async (blob) => {
         const result = await get(blob.pathname, {
           access: "private",
@@ -128,6 +128,21 @@ async function readEntries(): Promise<GuestbookEntry[]> {
         return (await new Response(result.stream).json()) as GuestbookEntry;
       })
     );
+
+    const entries = settled
+      .filter(
+        (result): result is PromiseFulfilledResult<GuestbookEntry> =>
+          result.status === "fulfilled"
+      )
+      .map((result) => result.value);
+
+    const failures = settled.filter((result) => result.status === "rejected");
+    if (failures.length > 0) {
+      console.error(
+        "Guestbook read skipped invalid blobs",
+        failures.map((result) => result.reason)
+      );
+    }
 
     return entries.sort(
       (a, b) =>

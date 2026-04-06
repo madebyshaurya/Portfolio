@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState, useEffect, useCallback } from "react"
-import { useSession, signIn, signOut } from "next-auth/react"
+import { useSession, signIn } from "next-auth/react"
 import Image from "next/image"
 import SignaturePad from "signature_pad"
 import confetti from "canvas-confetti"
@@ -60,8 +60,14 @@ export function Guestbook() {
 
   useEffect(() => {
     fetch("/api/guestbook")
-      .then((r) => r.json())
-      .then((data: GuestbookEntry[]) => setEntries(data))
+      .then(async (r) => {
+        const data = await r.json().catch(() => [])
+        if (!r.ok || !Array.isArray(data)) {
+          return []
+        }
+        return data as GuestbookEntry[]
+      })
+      .then((data) => setEntries(data))
       .catch(() => {})
   }, [])
 
@@ -312,11 +318,6 @@ export function Guestbook() {
     }
   }
 
-  const handleSignOut = async () => {
-    await signOut({ redirect: false })
-    window.location.reload()
-  }
-
   return (
     <section>
       <div className="mb-5 flex items-center justify-between gap-4">
@@ -343,11 +344,9 @@ export function Guestbook() {
             </div>
           </div>
           {session?.user ? (
-            <button
-              type="button"
-              onClick={() => void handleSignOut()}
-              title="sign out"
-              className="hidden items-center rounded-full border border-zinc-200 bg-zinc-50/70 p-1 transition-colors duration-150 hover:border-zinc-300 hover:bg-white sm:inline-flex"
+            <div
+              className="hidden items-center rounded-full border border-zinc-200 bg-zinc-50/70 p-1 sm:inline-flex"
+              title={session.user.name ?? "signed in"}
             >
               {session.user.image ? (
                 <Image
@@ -358,7 +357,7 @@ export function Guestbook() {
                   className="rounded-full"
                 />
               ) : null}
-            </button>
+            </div>
           ) : null}
         </div>
 
