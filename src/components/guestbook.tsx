@@ -312,6 +312,11 @@ export function Guestbook() {
     }
   }
 
+  const handleSignOut = async () => {
+    await signOut({ redirect: false })
+    window.location.reload()
+  }
+
   return (
     <section>
       <div className="mb-5 flex items-center justify-between gap-4">
@@ -340,7 +345,7 @@ export function Guestbook() {
           {session?.user ? (
             <button
               type="button"
-              onClick={() => void signOut({ redirectTo: "/" })}
+              onClick={() => void handleSignOut()}
               title="sign out"
               className="hidden items-center rounded-full border border-zinc-200 bg-zinc-50/70 p-1 transition-colors duration-150 hover:border-zinc-300 hover:bg-white sm:inline-flex"
             >
