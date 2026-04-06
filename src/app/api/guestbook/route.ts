@@ -11,6 +11,7 @@ interface GuestbookEntry {
   avatar: string;
   message: string;
   createdAt: string;
+  signature?: string;
 }
 
 async function readEntries(): Promise<GuestbookEntry[]> {
@@ -37,9 +38,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const { message } = await req.json();
+  const { message, signature } = await req.json();
   if (!message || typeof message !== "string" || message.trim().length === 0) {
     return NextResponse.json({ error: "Message required" }, { status: 400 });
+  }
+  if (
+    signature !== undefined &&
+    (typeof signature !== "string" ||
+      !signature.startsWith("data:image/png;base64,") ||
+      signature.length > 250_000)
+  ) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
   const entries = await readEntries();
@@ -49,6 +58,7 @@ export async function POST(req: Request) {
     avatar: session.user.image || "",
     message: message.trim().slice(0, 200),
     createdAt: new Date().toISOString(),
+    signature: signature || undefined,
   };
 
   entries.unshift(entry);
