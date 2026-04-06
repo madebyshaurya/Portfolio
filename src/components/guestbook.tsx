@@ -235,26 +235,38 @@ export function Guestbook() {
           .then((data: GuestbookEntry[]) => setEntries(data))
           .catch(() => {})
 
+        const confettiPalette = ["#18181b", "#52525b", "#a1a1aa", "#e4e4e7"]
         confetti({
-          particleCount: 32,
-          spread: 58,
+          particleCount: 28,
+          spread: 60,
           startVelocity: 24,
-          gravity: 0.88,
-          scalar: 0.8,
+          gravity: 0.9,
+          scalar: 0.78,
           ticks: 180,
-          origin: { x: 0.88, y: 0.22 },
-          colors: ["#18181b", "#71717a", "#d4d4d8", "#f4f4f5"],
+          origin: { x: 0.34, y: 0.3 },
+          colors: confettiPalette,
           shapes: ["circle"],
         })
         confetti({
-          particleCount: 18,
-          spread: 42,
+          particleCount: 28,
+          spread: 60,
+          startVelocity: 24,
+          gravity: 0.9,
+          scalar: 0.78,
+          ticks: 180,
+          origin: { x: 0.66, y: 0.3 },
+          colors: confettiPalette,
+          shapes: ["circle"],
+        })
+        confetti({
+          particleCount: 16,
+          spread: 44,
           startVelocity: 18,
-          gravity: 1.05,
-          scalar: 0.6,
-          ticks: 140,
-          origin: { x: 0.82, y: 0.18 },
-          colors: ["#18181b", "#a1a1aa", "#fafafa"],
+          gravity: 1.04,
+          scalar: 0.62,
+          ticks: 150,
+          origin: { x: 0.5, y: 0.2 },
+          colors: ["#18181b", "#d4d4d8", "#fafafa"],
           shapes: ["square"],
         })
       } else {
