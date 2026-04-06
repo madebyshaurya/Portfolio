@@ -7,11 +7,16 @@ import { Cursor } from "@/components/motion-primitives/cursor"
 import Floating, { FloatingElement } from "@/components/ui/parallax-floating"
 
 const photos = [
-  { src: "/photos/pfp3.jpeg", alt: "at Apple Park" },
-  { src: "/photos/ssc.jpeg", alt: "Swift Student Challenge" },
-  { src: "/photos/pfp2.jpeg", alt: "me" },
-  { src: "/photos/screenshot.jpeg", alt: "hackathon" },
-  { src: "/photos/fizzix.png", alt: "Fizzix app" },
+  {
+    src: "/photos/pfp2.jpeg",
+    alt: "Shaurya with Tim Cook",
+    label: "apple park",
+  },
+  {
+    src: "/photos/pfp3.jpeg",
+    alt: "Shaurya with MKBHD",
+    label: "wwdc",
+  },
 ]
 
 export function Photos() {
@@ -28,7 +33,7 @@ export function Photos() {
   return (
     <div
       ref={scope}
-      className="relative w-full h-[320px] sm:h-[380px] rounded-xl overflow-hidden bg-stone-50"
+      className="relative h-[360px] w-full overflow-visible sm:h-[420px]"
     >
       <Cursor
         attachToParent
@@ -44,46 +49,53 @@ export function Photos() {
           <ArrowUpRight className="h-3 w-3" />
         </div>
       </Cursor>
-      <Floating sensitivity={-0.5} easingFactor={0.04}>
-        <FloatingElement depth={0.5} className="top-[5%] left-[3%]">
-          <motion.img
-            initial={{ opacity: 0 }}
-            src={photos[0].src}
-            alt={photos[0].alt}
-            className="w-28 h-36 sm:w-36 sm:h-44 object-cover rounded-lg shadow-sm hover:scale-105 transition-transform duration-200 cursor-pointer"
-          />
+      <div className="pointer-events-none absolute inset-x-6 top-6 h-px bg-zinc-100" />
+      <div className="pointer-events-none absolute inset-x-6 bottom-6 h-px bg-zinc-100" />
+      <Floating sensitivity={-0.55} easingFactor={0.04}>
+        <FloatingElement depth={0.8} className="left-[2%] top-[8%] sm:left-[4%]">
+          <motion.div
+            initial={{ opacity: 0, y: 14, rotate: -7 }}
+            animate={{ opacity: 1, y: 0, rotate: -7 }}
+            transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
+            className="group relative cursor-pointer"
+          >
+            <div className="rounded-[2rem] bg-white p-3 shadow-[0_22px_60px_rgba(0,0,0,0.08)] ring-1 ring-black/5">
+              <motion.img
+                src={photos[0].src}
+                alt={photos[0].alt}
+                className="h-[210px] w-[170px] rounded-[1.4rem] object-cover transition-transform duration-300 group-hover:scale-[1.02] sm:h-[260px] sm:w-[210px]"
+              />
+              <div className="mt-3 flex items-center justify-between px-1">
+                <span className="text-[11px] uppercase tracking-[0.18em] text-zinc-400">
+                  {photos[0].label}
+                </span>
+                <span className="text-xs text-zinc-300">2024</span>
+              </div>
+            </div>
+          </motion.div>
         </FloatingElement>
-        <FloatingElement depth={1.5} className="top-[8%] left-[30%]">
-          <motion.img
-            initial={{ opacity: 0 }}
-            src={photos[1].src}
-            alt={photos[1].alt}
-            className="w-32 h-24 sm:w-44 sm:h-32 object-cover rounded-lg shadow-sm hover:scale-105 transition-transform duration-200 cursor-pointer"
-          />
-        </FloatingElement>
-        <FloatingElement depth={1} className="top-[2%] left-[62%]">
-          <motion.img
-            initial={{ opacity: 0 }}
-            src={photos[2].src}
-            alt={photos[2].alt}
-            className="w-24 h-32 sm:w-32 sm:h-40 object-cover rounded-lg shadow-sm hover:scale-105 transition-transform duration-200 cursor-pointer"
-          />
-        </FloatingElement>
-        <FloatingElement depth={2} className="top-[50%] left-[8%]">
-          <motion.img
-            initial={{ opacity: 0 }}
-            src={photos[3].src}
-            alt={photos[3].alt}
-            className="w-36 h-24 sm:w-48 sm:h-32 object-cover rounded-lg shadow-sm hover:scale-105 transition-transform duration-200 cursor-pointer"
-          />
-        </FloatingElement>
-        <FloatingElement depth={0.8} className="top-[45%] left-[55%]">
-          <motion.img
-            initial={{ opacity: 0 }}
-            src={photos[4].src}
-            alt={photos[4].alt}
-            className="w-28 h-28 sm:w-36 sm:h-36 object-cover rounded-lg shadow-sm hover:scale-105 transition-transform duration-200 cursor-pointer"
-          />
+
+        <FloatingElement depth={1.5} className="left-[44%] top-[18%] sm:left-[56%] sm:top-[12%]">
+          <motion.div
+            initial={{ opacity: 0, y: 18, rotate: 6 }}
+            animate={{ opacity: 1, y: 0, rotate: 6 }}
+            transition={{ duration: 0.65, delay: 0.08, ease: [0.23, 1, 0.32, 1] }}
+            className="group relative cursor-pointer"
+          >
+            <div className="rounded-[2rem] bg-white p-3 shadow-[0_22px_60px_rgba(0,0,0,0.08)] ring-1 ring-black/5">
+              <motion.img
+                src={photos[1].src}
+                alt={photos[1].alt}
+                className="h-[220px] w-[170px] rounded-[1.4rem] object-cover transition-transform duration-300 group-hover:scale-[1.02] sm:h-[270px] sm:w-[210px]"
+              />
+              <div className="mt-3 flex items-center justify-between px-1">
+                <span className="text-[11px] uppercase tracking-[0.18em] text-zinc-400">
+                  {photos[1].label}
+                </span>
+                <span className="text-xs text-zinc-300">apple</span>
+              </div>
+            </div>
+          </motion.div>
         </FloatingElement>
       </Floating>
     </div>
