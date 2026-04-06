@@ -340,7 +340,7 @@ export function Guestbook() {
           {session?.user ? (
             <button
               type="button"
-              onClick={() => void signOut()}
+              onClick={() => void signOut({ redirectTo: "/" })}
               title="sign out"
               className="hidden items-center rounded-full border border-zinc-200 bg-zinc-50/70 p-1 transition-colors duration-150 hover:border-zinc-300 hover:bg-white sm:inline-flex"
             >
