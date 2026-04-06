@@ -164,7 +164,7 @@ function FollowModal({
   return (
     <motion.div
       animate={active ? "enter" : "closed"}
-      className="pointer-events-none absolute z-50 overflow-hidden rounded-lg shadow-[0_8px_30px_rgba(0,0,0,0.08)]"
+      className="pointer-events-none absolute z-50 overflow-hidden rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.03)]"
       initial="initial"
       ref={modalRef}
       variants={modalAnimation}

@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { del, get, list, put } from "@vercel/blob";
+import { del, list, put } from "@vercel/blob";
 import BadWordsNext from "bad-words-next";
 import en from "bad-words-next/lib/en";
 import { NextResponse } from "next/server";
@@ -117,15 +117,16 @@ async function readEntries(): Promise<GuestbookEntry[]> {
 
     const settled = await Promise.allSettled(
       blobs.map(async (blob) => {
-        const result = await get(blob.pathname, {
-          access: "private",
-          token: process.env.BLOB_READ_WRITE_TOKEN,
-          useCache: false,
+        const res = await fetch(blob.url, {
+          headers: {
+            authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`,
+          },
+          cache: "no-store",
         });
-        if (!result || result.statusCode !== 200) {
+        if (!res.ok) {
           throw new Error(`Missing guestbook blob: ${blob.pathname}`);
         }
-        return (await new Response(result.stream).json()) as GuestbookEntry;
+        return (await res.json()) as GuestbookEntry;
       })
     );
 

@@ -86,7 +86,7 @@ export function Presence() {
 
   return (
     <div
-      className="relative inline-flex cursor-default items-center gap-2 rounded-full border border-zinc-200/80 bg-white/92 px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.06)] backdrop-blur-sm"
+      className="relative inline-flex cursor-default items-center gap-2 rounded-full border border-zinc-200/80 bg-white/92 px-3 py-2 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] backdrop-blur-sm"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -105,7 +105,7 @@ export function Presence() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 4 }}
             transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
-            className="absolute left-0 top-full z-50 mt-2 whitespace-nowrap rounded-xl border border-zinc-100 bg-white px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.08)]"
+            className="absolute left-0 top-full z-50 mt-2 whitespace-nowrap rounded-xl border border-zinc-100 bg-white px-3 py-2 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.03)]"
           >
             <div className="flex items-center gap-2">
               {summary.map((country) => (

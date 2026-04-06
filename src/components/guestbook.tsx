@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState, useEffect, useCallback } from "react"
-import { useSession, signIn } from "next-auth/react"
+import { useSession, signIn, signOut } from "next-auth/react"
 import Image from "next/image"
 import SignaturePad from "signature_pad"
 import confetti from "canvas-confetti"
@@ -344,9 +344,11 @@ export function Guestbook() {
             </div>
           </div>
           {session?.user ? (
-            <div
-              className="hidden items-center rounded-full border border-zinc-200 bg-zinc-50/70 p-1 sm:inline-flex"
-              title={session.user.name ?? "signed in"}
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              title="sign out"
+              className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50/70 py-1 pl-1 pr-2.5 text-[11px] text-zinc-400 transition-colors duration-150 hover:border-zinc-300 hover:bg-white hover:text-zinc-600"
             >
               {session.user.image ? (
                 <Image
@@ -357,7 +359,8 @@ export function Guestbook() {
                   className="rounded-full"
                 />
               ) : null}
-            </div>
+              sign out
+            </button>
           ) : null}
         </div>
 
@@ -380,18 +383,18 @@ export function Guestbook() {
                 }}
                 placeholder="leave a note..."
                 maxLength={200}
-                className="w-40 rounded-full border border-zinc-200 bg-white/95 px-4 py-2 text-sm text-zinc-700 shadow-[0_10px_30px_rgba(0,0,0,0.05)] outline-none transition-colors duration-200 placeholder:text-zinc-400 focus:border-zinc-300 sm:w-52"
+                className="w-40 rounded-full border border-zinc-200 bg-white/95 px-4 py-2 text-sm text-zinc-700 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] outline-none transition-colors duration-200 placeholder:text-zinc-400 focus:border-zinc-300 sm:w-52"
               />
               <MorphingPopoverTrigger
                 disabled={!message.trim()}
-                className="rounded-full border border-zinc-200 bg-white/95 px-4 py-2 text-sm text-zinc-600 shadow-[0_10px_30px_rgba(0,0,0,0.05)] transition-colors duration-200 hover:border-zinc-300 hover:text-zinc-800 disabled:opacity-40"
+                className="rounded-full border border-zinc-200 bg-white/95 px-4 py-2 text-sm text-zinc-600 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] transition-colors duration-200 hover:border-zinc-300 hover:text-zinc-800 disabled:opacity-40"
               >
                 sign
               </MorphingPopoverTrigger>
             </div>
 
             <MorphingPopoverContent
-              className={`fixed z-[80] rounded-[24px] border-zinc-200/90 bg-white/96 p-0 shadow-[0_24px_80px_rgba(0,0,0,0.10)] backdrop-blur-xl ${
+              className={`fixed z-[80] rounded-[24px] border-zinc-200/90 bg-white/96 p-0 shadow-[0_4px_16px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] backdrop-blur-xl ${
                 composerStep === "compose"
                   ? "w-[min(24rem,calc(100vw-2rem))]"
                   : "w-[min(26.25rem,calc(100vw-2rem))]"
@@ -593,7 +596,7 @@ export function Guestbook() {
                       </div>
 
                       <Tilt rotationFactor={4} springOptions={{ stiffness: 180, damping: 20 }}>
-                        <div className="relative rounded-2xl border border-zinc-200 bg-zinc-50/60 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_12px_24px_rgba(0,0,0,0.04)]">
+                        <div className="relative rounded-2xl border border-zinc-200 bg-zinc-50/60 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_1px_4px_rgba(0,0,0,0.03)]">
                           <div className="flex items-center gap-2">
                             {session?.user?.image ? (
                               <Image

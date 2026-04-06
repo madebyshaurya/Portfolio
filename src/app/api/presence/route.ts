@@ -1,4 +1,4 @@
-import { del, get, list, put } from "@vercel/blob";
+import { del, list, put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
@@ -31,15 +31,16 @@ async function readSessions(): Promise<PresenceSession[]> {
     const { blobs } = await list({ prefix: PRESENCE_PREFIX });
     const sessions = await Promise.all(
       blobs.map(async (blob) => {
-        const result = await get(blob.pathname, {
-          access: "private",
-          token: process.env.BLOB_READ_WRITE_TOKEN,
-          useCache: false,
+        const res = await fetch(blob.url, {
+          headers: {
+            authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`,
+          },
+          cache: "no-store",
         });
-        if (!result || result.statusCode !== 200) {
+        if (!res.ok) {
           throw new Error(`Missing presence blob: ${blob.pathname}`);
         }
-        return (await new Response(result.stream).json()) as PresenceSession;
+        return (await res.json()) as PresenceSession;
       })
     );
     return sessions;

@@ -44,7 +44,7 @@ export function Photos() {
           exit: { opacity: 0, scale: 0.85 },
         }}
       >
-        <div className="flex items-center gap-1 rounded-full bg-white/92 px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-zinc-700 shadow-[0_8px_24px_rgba(0,0,0,0.08)] backdrop-blur-sm">
+        <div className="flex items-center gap-1 rounded-full bg-white/92 px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-zinc-700 shadow-[0_2px_8px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.03)] backdrop-blur-sm">
           view
           <ArrowUpRight className="h-3 w-3" />
         </div>
@@ -59,7 +59,7 @@ export function Photos() {
             transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
             className="group relative cursor-pointer"
           >
-            <div className="rounded-[2rem] bg-white p-3 shadow-[0_22px_60px_rgba(0,0,0,0.08)] ring-1 ring-black/5">
+            <div className="rounded-[2rem] bg-white p-3 shadow-[0_2px_8px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.03)] ring-1 ring-black/5">
               <motion.img
                 src={photos[0].src}
                 alt={photos[0].alt}
@@ -82,7 +82,7 @@ export function Photos() {
             transition={{ duration: 0.65, delay: 0.08, ease: [0.23, 1, 0.32, 1] }}
             className="group relative cursor-pointer"
           >
-            <div className="rounded-[2rem] bg-white p-3 shadow-[0_22px_60px_rgba(0,0,0,0.08)] ring-1 ring-black/5">
+            <div className="rounded-[2rem] bg-white p-3 shadow-[0_2px_8px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.03)] ring-1 ring-black/5">
               <motion.img
                 src={photos[1].src}
                 alt={photos[1].alt}
