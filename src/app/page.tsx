@@ -48,7 +48,7 @@ function RotatingQuotes() {
         <TextRotate
           texts={quotes.map((q) => `— ${q.author}`)}
           rotationInterval={4000}
-          className="text-xs text-zinc-300"
+          mainClassName="text-xs text-zinc-300"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
