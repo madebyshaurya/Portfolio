@@ -86,15 +86,15 @@ export function Presence() {
 
   return (
     <div
-      className="relative inline-flex cursor-default items-center gap-2"
+      className="relative inline-flex cursor-default items-center gap-2 rounded-full border border-zinc-200/80 bg-white/92 px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.06)] backdrop-blur-sm"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       <span className="relative flex h-1.5 w-1.5">
-        <span className="absolute inline-flex h-full w-full rounded-full bg-zinc-400/40 animate-[pulse_3s_ease-in-out_infinite]" />
-        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-zinc-400" />
+        <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400/35 animate-[pulse_3s_ease-in-out_infinite]" />
+        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
       </span>
-      <span className="text-xs tabular-nums text-zinc-400">
+      <span className="text-xs tabular-nums font-medium text-zinc-600">
         {presence.count} online
       </span>
 
@@ -105,7 +105,7 @@ export function Presence() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 4 }}
             transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
-            className="absolute left-0 top-full z-50 mt-2 whitespace-nowrap rounded-lg border border-zinc-100 bg-white px-3 py-2 shadow-[0_4px_12px_rgba(0,0,0,0.06)]"
+            className="absolute left-0 top-full z-50 mt-2 whitespace-nowrap rounded-xl border border-zinc-100 bg-white px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.08)]"
           >
             <div className="flex items-center gap-2">
               {summary.map((country) => (

@@ -5,7 +5,6 @@ import { animate, useMotionValue, useMotionValueEvent } from "motion/react";
 import { Footer } from "@/components/footer";
 import { MixedFontName } from "@/components/mixed-font-name";
 import { Presence } from "@/components/presence";
-import { Photos } from "@/components/photos";
 import { Guestbook } from "@/components/guestbook";
 import { ProjectsHoverModal } from "@/components/ui/services-with-animated-hover-modal";
 import { LinkPreview } from "@/components/ui/link-preview";
@@ -112,7 +111,7 @@ export default function Home() {
                 <Presence />
               </div>
             </div>
-            <p className="mt-4 text-sm text-zinc-500 leading-relaxed max-w-md">
+            <p className="mt-4 max-w-md text-sm leading-relaxed text-zinc-500">
               15, toronto. i build ios apps and ship things on the internet.
               started coding at 9. been at it for a while.
             </p>
@@ -125,29 +124,22 @@ export default function Home() {
 
           <div className="mt-10 mb-8 h-px bg-zinc-100" />
 
-          {/* Photos */}
-          <motion.section {...stagger(2)}>
-            <Photos />
-          </motion.section>
-
-          <div className="mt-10 mb-8 h-px bg-zinc-100" />
-
           {/* Guestbook */}
-          <motion.section {...stagger(3)}>
+          <motion.section {...stagger(2)}>
             <Guestbook />
           </motion.section>
 
           <div className="mt-10 mb-8 h-px bg-zinc-100" />
 
           {/* Projects */}
-          <motion.section {...stagger(4)}>
+          <motion.section {...stagger(3)}>
             <ProjectsHoverModal />
           </motion.section>
 
           <div className="mt-10 mb-8 h-px bg-zinc-100" />
 
           {/* A few things */}
-          <motion.section {...stagger(5)}>
+          <motion.section {...stagger(4)}>
             <h2 className="text-xs text-zinc-400 tracking-wide uppercase mb-5">
               A few things
             </h2>
@@ -219,7 +211,7 @@ export default function Home() {
           <div className="mt-10 mb-8 h-px bg-zinc-100" />
 
           {/* Rotating quotes */}
-          <motion.section {...stagger(6)}>
+          <motion.section {...stagger(5)}>
             <RotatingQuotes />
           </motion.section>
         </div>

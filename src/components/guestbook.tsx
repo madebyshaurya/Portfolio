@@ -371,11 +371,11 @@ export function Guestbook() {
                 }}
                 placeholder="leave a note..."
                 maxLength={200}
-                className="w-36 rounded-full border border-zinc-200 bg-transparent px-3 py-1.5 text-xs text-zinc-700 outline-none transition-colors duration-200 placeholder:text-zinc-300 focus:border-zinc-300 sm:w-48"
+                className="w-40 rounded-full border border-zinc-200 bg-white/95 px-4 py-2 text-sm text-zinc-700 shadow-[0_10px_30px_rgba(0,0,0,0.05)] outline-none transition-colors duration-200 placeholder:text-zinc-400 focus:border-zinc-300 sm:w-52"
               />
               <MorphingPopoverTrigger
                 disabled={!message.trim()}
-                className="rounded-full border border-zinc-200 px-3 py-1.5 text-xs text-zinc-400 transition-colors duration-200 hover:border-zinc-300 hover:text-zinc-600 disabled:opacity-40"
+                className="rounded-full border border-zinc-200 bg-white/95 px-4 py-2 text-sm text-zinc-600 shadow-[0_10px_30px_rgba(0,0,0,0.05)] transition-colors duration-200 hover:border-zinc-300 hover:text-zinc-800 disabled:opacity-40"
               >
                 sign
               </MorphingPopoverTrigger>

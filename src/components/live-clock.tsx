@@ -33,7 +33,7 @@ export function LiveClock() {
   if (!parts) return null
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200/80 bg-white/92 px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.06)] backdrop-blur-sm">
       <span className="relative flex h-2 w-2">
         <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400/40 animate-[pulse_3s_ease-in-out_infinite]" />
         <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
