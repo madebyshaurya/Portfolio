@@ -678,26 +678,26 @@ export function Guestbook() {
           entries.map((entry) => (
             <div
               key={entry.id}
-              className="relative w-[300px] shrink-0 overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50/60 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] transition-[transform,border-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-0.5 hover:border-zinc-200"
+              className="relative w-[300px] shrink-0 overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50/60 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]"
             >
-              <div className="flex items-start gap-2">
-                <Image
-                  src={entry.avatar}
-                  alt={entry.username}
-                  width={28}
-                  height={28}
-                  className="rounded-full ring-1 ring-black/[0.04]"
-                />
-                <div className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-zinc-600">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Image
+                    src={entry.avatar}
+                    alt={entry.username}
+                    width={28}
+                    height={28}
+                    className="rounded-full ring-1 ring-black/[0.04]"
+                  />
+                  <span className="truncate text-sm font-medium text-zinc-600">
                     {entry.username}
                   </span>
-                  <span className="block text-[11px] tabular-nums text-zinc-300">
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="text-[11px] tabular-nums text-zinc-300">
                     {timeAgo(entry.createdAt)}
                   </span>
-                </div>
-                {entry.canManage ? (
-                  <div className="ml-auto flex items-center gap-1">
+                  {entry.canManage ? (
                     <button
                       onClick={() => void handleDelete(entry)}
                       className="press-scale inline-flex min-h-8 items-center gap-1 rounded-full border border-zinc-200 bg-white/80 px-2.5 text-[11px] text-zinc-400 hover:border-red-200 hover:text-red-500"
@@ -705,8 +705,8 @@ export function Guestbook() {
                       <Trash2 className="h-3 w-3" />
                       delete
                     </button>
-                  </div>
-                ) : null}
+                  ) : null}
+                </div>
               </div>
               <p className="relative z-10 mt-4 text-[15px] leading-snug text-zinc-600">
                 {entry.message}
