@@ -1,13 +1,15 @@
 import { auth } from "@/auth";
-import { del, list, put } from "@vercel/blob";
+import { Redis } from "@upstash/redis";
 import BadWordsNext from "bad-words-next";
 import en from "bad-words-next/lib/en";
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 
-const DATA_FILE = path.join(process.cwd(), "guestbook.json");
-const GUESTBOOK_PREFIX = "guestbook/entries/";
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL!,
+  token: process.env.KV_REST_API_TOKEN!,
+});
+
+const HASH_KEY = "guestbook:entries";
 const BLOCKED_PATTERNS = [
   /\bn[i1!|l]+g+([ea3@]+|er|a)\b/i,
   /\bf[a4@]+g+\b/i,
@@ -77,10 +79,6 @@ function canManageEntry(
   );
 }
 
-function getEntryPath(entry: Pick<GuestbookEntry, "createdAt" | "id">) {
-  return `${GUESTBOOK_PREFIX}${String(9_999_999_999_999 - new Date(entry.createdAt).getTime()).padStart(13, "0")}-${entry.id}.json`;
-}
-
 function validatePayload(message: unknown, signature: unknown, signatureText: unknown) {
   const normalizedMessage = typeof message === "string" ? message.trim() : "";
 
@@ -91,7 +89,7 @@ function validatePayload(message: unknown, signature: unknown, signatureText: un
     badWords.check(normalizedMessage) ||
     BLOCKED_PATTERNS.some((pattern) => pattern.test(normalizedMessage))
   ) {
-    return { error: "That note can’t be posted.", status: 400 as const };
+    return { error: "That note can't be posted.", status: 400 as const };
   }
   if (
     signature !== undefined &&
@@ -112,73 +110,13 @@ function validatePayload(message: unknown, signature: unknown, signatureText: un
 }
 
 async function readEntries(): Promise<GuestbookEntry[]> {
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
-    const { blobs } = await list({ prefix: GUESTBOOK_PREFIX });
+  const data = await redis.hgetall<Record<string, GuestbookEntry>>(HASH_KEY);
+  if (!data) return [];
 
-    const settled = await Promise.allSettled(
-      blobs.map(async (blob) => {
-        const res = await fetch(blob.url, {
-          headers: {
-            authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`,
-          },
-          cache: "no-store",
-        });
-        if (!res.ok) {
-          throw new Error(`Missing guestbook blob: ${blob.pathname}`);
-        }
-        return (await res.json()) as GuestbookEntry;
-      })
-    );
-
-    const entries = settled
-      .filter(
-        (result): result is PromiseFulfilledResult<GuestbookEntry> =>
-          result.status === "fulfilled"
-      )
-      .map((result) => result.value);
-
-    const failures = settled.filter((result) => result.status === "rejected");
-    if (failures.length > 0) {
-      console.error(
-        "Guestbook read skipped invalid blobs",
-        failures.map((result) => result.reason)
-      );
-    }
-
-    return entries.sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-  }
-
-  try {
-    const data = await fs.readFile(DATA_FILE, "utf-8");
-    return JSON.parse(data);
-  } catch {
-    return [];
-  }
-}
-
-async function writeEntries(entries: GuestbookEntry[]) {
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
-    await Promise.all(
-      entries.map((entry) =>
-        put(
-          `${GUESTBOOK_PREFIX}${String(9_999_999_999_999 - new Date(entry.createdAt).getTime()).padStart(13, "0")}-${entry.id}.json`,
-          JSON.stringify(entry),
-          {
-            access: "private",
-            addRandomSuffix: false,
-            contentType: "application/json",
-          }
-        )
-      )
-    );
-
-    return;
-  }
-
-  await fs.writeFile(DATA_FILE, JSON.stringify(entries, null, 2));
+  return Object.values(data).sort(
+    (a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 }
 
 export async function GET() {
@@ -201,7 +139,7 @@ export async function GET() {
   } catch (error) {
     console.error("Guestbook GET failed", error);
     return NextResponse.json(
-      { error: "Couldn’t load guestbook right now." },
+      { error: "Couldn't load guestbook right now." },
       { status: 500 }
     );
   }
@@ -265,18 +203,13 @@ export async function POST(req: Request) {
       signatureText: signatureText?.trim() || undefined,
     };
 
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      await writeEntries([entry]);
-    } else {
-      entries.unshift(entry);
-      await fs.writeFile(DATA_FILE, JSON.stringify(entries, null, 2));
-    }
+    await redis.hset(HASH_KEY, { [entry.id]: entry });
 
     return NextResponse.json(entry, { status: 201 });
   } catch (error) {
     console.error("Guestbook POST failed", error);
     return NextResponse.json(
-      { error: "Couldn’t post note right now." },
+      { error: "Couldn't post note right now." },
       { status: 500 }
     );
   }
@@ -299,8 +232,7 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: validation.error }, { status: validation.status });
     }
 
-    const entries = await readEntries();
-    const existing = entries.find((entry) => entry.id === id);
+    const existing = await redis.hget<GuestbookEntry>(HASH_KEY, id);
     if (!existing) {
       return NextResponse.json({ error: "Note not found" }, { status: 404 });
     }
@@ -309,7 +241,7 @@ export async function PUT(req: Request) {
     const viewerName = session.user.name || "";
     const viewerIsAdmin = isAdminSession(session.user);
     if (!canManageEntry(existing, authorKey, viewerName, viewerIsAdmin)) {
-      return NextResponse.json({ error: "You can’t edit this note." }, { status: 403 });
+      return NextResponse.json({ error: "You can't edit this note." }, { status: 403 });
     }
 
     const updated: GuestbookEntry = {
@@ -323,22 +255,13 @@ export async function PUT(req: Request) {
       authorKey,
     };
 
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      await put(getEntryPath(updated), JSON.stringify(updated), {
-        access: "private",
-        addRandomSuffix: false,
-        contentType: "application/json",
-      });
-    } else {
-      const nextEntries = entries.map((entry) => (entry.id === id ? updated : entry));
-      await fs.writeFile(DATA_FILE, JSON.stringify(nextEntries, null, 2));
-    }
+    await redis.hset(HASH_KEY, { [id]: updated });
 
     return NextResponse.json(updated);
   } catch (error) {
     console.error("Guestbook PUT failed", error);
     return NextResponse.json(
-      { error: "Couldn’t update note right now." },
+      { error: "Couldn't update note right now." },
       { status: 500 }
     );
   }
@@ -356,8 +279,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Missing note id" }, { status: 400 });
     }
 
-    const entries = await readEntries();
-    const existing = entries.find((entry) => entry.id === id);
+    const existing = await redis.hget<GuestbookEntry>(HASH_KEY, id);
     if (!existing) {
       return NextResponse.json({ error: "Note not found" }, { status: 404 });
     }
@@ -366,21 +288,16 @@ export async function DELETE(req: Request) {
     const viewerName = session.user.name || "";
     const viewerIsAdmin = isAdminSession(session.user);
     if (!canManageEntry(existing, authorKey, viewerName, viewerIsAdmin)) {
-      return NextResponse.json({ error: "You can’t delete this note." }, { status: 403 });
+      return NextResponse.json({ error: "You can't delete this note." }, { status: 403 });
     }
 
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      await del(getEntryPath(existing));
-    } else {
-      const nextEntries = entries.filter((entry) => entry.id !== id);
-      await fs.writeFile(DATA_FILE, JSON.stringify(nextEntries, null, 2));
-    }
+    await redis.hdel(HASH_KEY, id);
 
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Guestbook DELETE failed", error);
     return NextResponse.json(
-      { error: "Couldn’t delete note right now." },
+      { error: "Couldn't delete note right now." },
       { status: 500 }
     );
   }

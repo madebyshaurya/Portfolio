@@ -1,10 +1,12 @@
-import { del, list, put } from "@vercel/blob";
+import { Redis } from "@upstash/redis";
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 
-const DATA_FILE = path.join(process.cwd(), "presence.json");
-const PRESENCE_PREFIX = "presence/sessions/";
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL!,
+  token: process.env.KV_REST_API_TOKEN!,
+});
+
+const HASH_KEY = "presence:sessions";
 const ACTIVE_WINDOW_MS = 45_000;
 
 interface PresenceSession {
@@ -26,70 +28,22 @@ function getCountry(headers: Headers) {
   return { countryCode, countryName };
 }
 
-async function readSessions(): Promise<PresenceSession[]> {
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
-    const { blobs } = await list({ prefix: PRESENCE_PREFIX });
-    const sessions = await Promise.all(
-      blobs.map(async (blob) => {
-        const res = await fetch(blob.url, {
-          headers: {
-            authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`,
-          },
-          cache: "no-store",
-        });
-        if (!res.ok) {
-          throw new Error(`Missing presence blob: ${blob.pathname}`);
-        }
-        return (await res.json()) as PresenceSession;
-      })
-    );
-    return sessions;
-  }
-
-  try {
-    const data = await fs.readFile(DATA_FILE, "utf-8");
-    return JSON.parse(data);
-  } catch {
-    return [];
-  }
-}
-
-async function writeSessions(sessions: PresenceSession[]) {
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
-    const { blobs } = await list({ prefix: PRESENCE_PREFIX });
-    if (blobs.length > 0) {
-      await del(blobs.map((blob) => blob.url));
-    }
-
-    await Promise.all(
-      sessions.map((session) =>
-        put(
-          `${PRESENCE_PREFIX}${session.id}.json`,
-          JSON.stringify(session),
-          {
-            access: "private",
-            addRandomSuffix: false,
-            contentType: "application/json",
-          }
-        )
-      )
-    );
-    return;
-  }
-
-  await fs.writeFile(DATA_FILE, JSON.stringify(sessions, null, 2));
-}
-
-function getActiveSessions(sessions: PresenceSession[]) {
-  const cutoff = Date.now() - ACTIVE_WINDOW_MS;
-  return sessions.filter(
-    (session) => new Date(session.lastSeenAt).getTime() >= cutoff
-  );
-}
-
 export async function GET() {
-  const sessions = await readSessions();
-  const active = getActiveSessions(sessions);
+  const data = await redis.hgetall<Record<string, PresenceSession>>(HASH_KEY);
+  const sessions = data ? Object.values(data) : [];
+
+  const cutoff = Date.now() - ACTIVE_WINDOW_MS;
+  const active = sessions.filter(
+    (s) => new Date(s.lastSeenAt).getTime() >= cutoff
+  );
+
+  // Clean up expired sessions in the background
+  const expired = sessions.filter(
+    (s) => new Date(s.lastSeenAt).getTime() < cutoff
+  );
+  if (expired.length > 0) {
+    redis.hdel(HASH_KEY, ...expired.map((s) => s.id)).catch(() => {});
+  }
 
   const countries = active.reduce<Record<string, { code: string; name: string; count: number }>>(
     (acc, session) => {
@@ -107,10 +61,6 @@ export async function GET() {
     {}
   );
 
-  if (active.length !== sessions.length) {
-    await writeSessions(active);
-  }
-
   return NextResponse.json({
     count: active.length,
     countries: Object.values(countries).sort((a, b) => b.count - a.count),
@@ -126,17 +76,15 @@ export async function POST(req: Request) {
   }
 
   const { countryCode, countryName } = getCountry(req.headers);
-  const sessions = await readSessions();
-  const active = getActiveSessions(sessions).filter((s) => s.id !== sessionId);
 
-  active.push({
+  const session: PresenceSession = {
     id: sessionId,
     countryCode,
     countryName,
     lastSeenAt: new Date().toISOString(),
-  });
+  };
 
-  await writeSessions(active);
+  await redis.hset(HASH_KEY, { [sessionId]: session });
 
   return NextResponse.json({ ok: true });
 }
