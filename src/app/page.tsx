@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { animate, useMotionValue, useMotionValueEvent } from "motion/react";
 import { Footer } from "@/components/footer";
 import { MixedFontName } from "@/components/mixed-font-name";
@@ -12,7 +12,8 @@ import { LiveClock } from "@/components/live-clock";
 import { TextHighlighter } from "@/components/fancy/text/text-highlighter";
 import TextRotate from "@/components/fancy/text/text-rotate";
 import PixelateSvgFilter from "@/components/fancy/filter/pixelate-svg-filter";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
+import { useLiveCursors, LiveCursors } from "@/components/live-cursors";
 
 const quotes = [
   { text: "the best way to predict the future is to build it.", author: "alan kay" },
@@ -72,6 +73,9 @@ export default function Home() {
   const pixelSize = useMotionValue(12);
   const [size, setSize] = useState(12);
   const [isAnimating, setIsAnimating] = useState(true);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const { cursors, presence, toasts } = useLiveCursors(cardRef);
 
   useMotionValueEvent(pixelSize, "change", (latest) => {
     setSize(latest);
@@ -92,9 +96,15 @@ export default function Home() {
         <PixelateSvgFilter id="page-pixelate" size={size} />
       )}
 
+      {/* Live cursors from other visitors */}
+      <AnimatePresence>
+        <LiveCursors cursors={cursors} />
+      </AnimatePresence>
+
       {/* White card — sits above the sticky footer */}
       <div className="relative z-10 p-3 sm:p-6">
         <div
+          ref={cardRef}
           className="w-full rounded-2xl sm:rounded-3xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)] flex flex-col"
           style={{
             filter: isAnimating ? "url(#page-pixelate)" : undefined,
@@ -108,7 +118,7 @@ export default function Home() {
                 <MixedFontName name="Shaurya Gupta" />
               </h1>
               <div className="sm:mt-2 shrink-0">
-                <Presence />
+                <Presence count={presence.count} countries={presence.countries} toasts={toasts} />
               </div>
             </div>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-zinc-500">

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://www.partykit.io/schema.json",
+  "name": "portfolio-cursors",
+  "main": "party/cursors.ts",
+  "compatibilityDate": "2024-09-01"
+}
