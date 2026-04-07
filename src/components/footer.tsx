@@ -18,7 +18,7 @@ export function Footer() {
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-zinc-400 transition-colors duration-200 hover:text-zinc-600"
+              className="press-scale text-xs text-zinc-400 hover:text-zinc-600"
             >
               {link.label}
             </a>

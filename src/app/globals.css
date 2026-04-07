@@ -134,3 +134,23 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Scale-on-press for interactive elements */
+@layer base {
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+  p, li {
+    text-wrap: pretty;
+  }
+}
+
+/* Tactile press feedback — 0.97 is the sweet spot */
+.press-scale {
+  transition-property: transform, color, background-color, border-color, opacity;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+}
+.press-scale:active:not(:disabled) {
+  transform: scale(0.97);
+}

@@ -330,14 +330,14 @@ export function Guestbook() {
               <button
                 onClick={() => scroll("left")}
                 disabled={!canScrollLeft}
-                className="rounded-md p-1 text-zinc-300 transition-colors duration-150 hover:text-zinc-500 disabled:cursor-default disabled:opacity-30"
+                className="press-scale flex h-8 w-8 items-center justify-center rounded-md text-zinc-300 hover:text-zinc-500 disabled:cursor-default disabled:opacity-30"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={() => scroll("right")}
                 disabled={!canScrollRight}
-                className="rounded-md p-1 text-zinc-300 transition-colors duration-150 hover:text-zinc-500 disabled:cursor-default disabled:opacity-30"
+                className="press-scale flex h-8 w-8 items-center justify-center rounded-md text-zinc-300 hover:text-zinc-500 disabled:cursor-default disabled:opacity-30"
               >
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
@@ -348,7 +348,7 @@ export function Guestbook() {
               type="button"
               onClick={() => void signOut()}
               title="sign out"
-              className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50/70 py-1 pl-1 pr-2.5 text-[11px] text-zinc-400 transition-colors duration-150 hover:border-zinc-300 hover:bg-white hover:text-zinc-600"
+              className="press-scale inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50/70 py-1 pl-1 pr-2.5 text-[11px] text-zinc-400 hover:border-zinc-300 hover:bg-white hover:text-zinc-600"
             >
               {session.user.image ? (
                 <Image
@@ -356,7 +356,7 @@ export function Guestbook() {
                   alt={session.user.name ?? "you"}
                   width={20}
                   height={20}
-                  className="rounded-full"
+                  className="rounded-full ring-1 ring-black/[0.04]"
                 />
               ) : null}
               sign out
@@ -387,7 +387,7 @@ export function Guestbook() {
               />
               <MorphingPopoverTrigger
                 disabled={!message.trim()}
-                className="rounded-full border border-zinc-200 bg-white/95 px-4 py-2 text-sm text-zinc-600 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] transition-colors duration-200 hover:border-zinc-300 hover:text-zinc-800 disabled:opacity-40"
+                className="press-scale rounded-full border border-zinc-200 bg-white/95 px-4 py-2 text-sm text-zinc-600 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] hover:border-zinc-300 hover:text-zinc-800 disabled:opacity-40"
               >
                 sign
               </MorphingPopoverTrigger>
@@ -563,14 +563,14 @@ export function Guestbook() {
                       <div className="mt-4 flex justify-end gap-2">
                         <button
                           onClick={closeComposer}
-                          className="rounded-full border border-zinc-200 px-4 py-2 text-xs text-zinc-400 transition-colors duration-150 hover:border-zinc-300 hover:text-zinc-600"
+                          className="press-scale rounded-full border border-zinc-200 px-4 py-2 text-xs text-zinc-400 hover:border-zinc-300 hover:text-zinc-600"
                         >
                           cancel
                         </button>
                         <button
                           onClick={() => setComposerStep("preview")}
                           disabled={!canPreview}
-                          className="rounded-full bg-zinc-950 px-4 py-2 text-xs text-white transition-opacity duration-150 disabled:opacity-40"
+                          className="press-scale rounded-full bg-zinc-950 px-4 py-2 text-xs text-white disabled:opacity-40"
                         >
                           done
                         </button>
@@ -635,14 +635,14 @@ export function Guestbook() {
                       <div className="mt-4 flex justify-between gap-2">
                         <button
                           onClick={() => setComposerStep("compose")}
-                          className="rounded-full border border-zinc-200 px-4 py-2 text-xs text-zinc-400 transition-colors duration-150 hover:border-zinc-300 hover:text-zinc-600"
+                          className="press-scale rounded-full border border-zinc-200 px-4 py-2 text-xs text-zinc-400 hover:border-zinc-300 hover:text-zinc-600"
                         >
                           back
                         </button>
                         <button
                           onClick={handleSubmit}
                           disabled={submitting}
-                          className="rounded-full bg-zinc-950 px-4 py-2 text-xs text-white transition-opacity duration-150 disabled:opacity-50"
+                          className="press-scale rounded-full bg-zinc-950 px-4 py-2 text-xs text-white disabled:opacity-50"
                         >
                           {submitting ? "posting..." : "post note"}
                         </button>
@@ -656,7 +656,7 @@ export function Guestbook() {
         ) : (
           <button
             onClick={() => signIn("github")}
-            className="rounded-full border border-zinc-200 px-3 py-1.5 text-xs text-zinc-400 transition-colors duration-200 hover:border-zinc-300 hover:text-zinc-600"
+            className="press-scale rounded-full border border-zinc-200 px-3 py-1.5 text-xs text-zinc-400 hover:border-zinc-300 hover:text-zinc-600"
           >
             sign with github
           </button>
@@ -678,7 +678,7 @@ export function Guestbook() {
           entries.map((entry) => (
             <div
               key={entry.id}
-              className="relative w-[300px] shrink-0 overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50/60 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]"
+              className="relative w-[300px] shrink-0 overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-50/60 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] transition-[transform,border-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-0.5 hover:border-zinc-200"
             >
               <div className="flex items-start gap-2">
                 <Image
@@ -686,7 +686,7 @@ export function Guestbook() {
                   alt={entry.username}
                   width={28}
                   height={28}
-                  className="rounded-full"
+                  className="rounded-full ring-1 ring-black/[0.04]"
                 />
                 <div className="min-w-0">
                   <span className="block truncate text-sm font-medium text-zinc-600">
@@ -700,7 +700,7 @@ export function Guestbook() {
                   <div className="ml-auto flex items-center gap-1">
                     <button
                       onClick={() => void handleDelete(entry)}
-                      className="inline-flex min-h-8 items-center gap-1 rounded-full border border-zinc-200 bg-white/80 px-2.5 text-[11px] text-zinc-400 transition-colors duration-150 hover:border-red-200 hover:text-red-500"
+                      className="press-scale inline-flex min-h-8 items-center gap-1 rounded-full border border-zinc-200 bg-white/80 px-2.5 text-[11px] text-zinc-400 hover:border-red-200 hover:text-red-500"
                     >
                       <Trash2 className="h-3 w-3" />
                       delete
