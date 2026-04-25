@@ -9,6 +9,7 @@ import { Guestbook } from "@/components/guestbook";
 import { ProjectsHoverModal } from "@/components/ui/services-with-animated-hover-modal";
 import { LinkPreview } from "@/components/ui/link-preview";
 import { LiveClock } from "@/components/live-clock";
+import { LiveAge } from "@/components/live-age";
 import { TextHighlighter } from "@/components/fancy/text/text-highlighter";
 import TextRotate from "@/components/fancy/text/text-rotate";
 import PixelateSvgFilter from "@/components/fancy/filter/pixelate-svg-filter";
@@ -122,7 +123,7 @@ export default function Home() {
               </div>
             </div>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-zinc-500">
-              15, toronto. i build ios apps and ship things on the internet.
+              <LiveAge />, toronto. i build ios apps and ship things on the internet.
               started coding at 9. been at it for a while.
             </p>
           </motion.div>
