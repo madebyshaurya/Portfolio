@@ -78,11 +78,13 @@ export function useLiveCursors(containerRef: React.RefObject<HTMLElement | null>
   const toastId = useRef(0)
   const lastSent = useRef(0)
 
-  const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST || "127.0.0.1:1999"
+  const host = process.env.NEXT_PUBLIC_PARTYKIT_HOST ?? ""
+  const enabled = host.length > 0
 
   const ws = usePartySocket({
-    host,
+    host: enabled ? host : "localhost:1999",
     room: "main",
+    startClosed: !enabled,
     onMessage(event) {
       const data = JSON.parse(event.data)
 
@@ -148,9 +150,10 @@ export function useLiveCursors(containerRef: React.RefObject<HTMLElement | null>
   )
 
   useEffect(() => {
+    if (!enabled) return
     window.addEventListener("pointermove", handlePointerMove)
     return () => window.removeEventListener("pointermove", handlePointerMove)
-  }, [handlePointerMove])
+  }, [handlePointerMove, enabled])
 
   // Clean up stale cursors (no update in 10s)
   useEffect(() => {
