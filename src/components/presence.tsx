@@ -66,14 +66,23 @@ export function Presence({ count, countries, toasts }: PresenceProps) {
         </AnimatePresence>
 
         {/* country flags reveal on hover */}
-        <AnimatePresence initial={false}>
+        <AnimatePresence mode="popLayout" initial={false}>
           {hovered && summary.length > 0 && (
             <motion.div
               key="flags"
               initial={{ opacity: 0, scale: 0.92, filter: "blur(3px)" }}
-              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-              exit={{ opacity: 0, scale: 0.95, filter: "blur(3px)" }}
-              transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+                filter: "blur(0px)",
+                transition: { duration: 0.22, ease: [0.23, 1, 0.32, 1] },
+              }}
+              exit={{
+                opacity: 0,
+                scale: 0.96,
+                filter: "blur(3px)",
+                transition: { duration: 0.14, ease: [0.23, 1, 0.32, 1] },
+              }}
               style={{ transformOrigin: "left center" }}
               className="flex items-center gap-1"
             >
@@ -82,9 +91,10 @@ export function Presence({ count, countries, toasts }: PresenceProps) {
                 <motion.span
                   key={country.code}
                   initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.18, delay: 0.04 + i * 0.04, ease: [0.23, 1, 0.32, 1] }}
+                  animate={{
+                    opacity: 1,
+                    transition: { duration: 0.18, delay: 0.04 + i * 0.04, ease: [0.23, 1, 0.32, 1] },
+                  }}
                   className="text-[13px] leading-none"
                   title={`${country.name} \u00b7 ${country.count}`}
                 >
