@@ -8,7 +8,7 @@ import {
   motion,
   useMotionValue,
   useSpring,
-} from "framer-motion";
+} from "motion/react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -59,7 +59,7 @@ export const LinkPreview = ({
     setIsMounted(true);
   }, []);
 
-  const springConfig = { stiffness: 100, damping: 15 };
+  const springConfig = { stiffness: 180, damping: 22 };
   const x = useMotionValue(0);
   const translateX = useSpring(x, springConfig);
 
@@ -79,7 +79,7 @@ export const LinkPreview = ({
             width={width}
             height={height}
             quality={quality}
-            priority={true}
+            loading="lazy"
             alt="hidden image"
           />
         </span>
@@ -109,18 +109,21 @@ export const LinkPreview = ({
           <AnimatePresence>
             {isOpen && (
               <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.6 }}
+                initial={{ opacity: 0, y: 8, scale: 0.92, filter: "blur(4px)" }}
                 animate={{
                   opacity: 1,
                   y: 0,
                   scale: 1,
-                  transition: {
-                    type: "spring",
-                    stiffness: 260,
-                    damping: 20,
-                  },
+                  filter: "blur(0px)",
+                  transition: { type: "spring", duration: 0.3, bounce: 0.1 },
                 }}
-                exit={{ opacity: 0, y: 20, scale: 0.6 }}
+                exit={{
+                  opacity: 0,
+                  y: 6,
+                  scale: 0.96,
+                  filter: "blur(3px)",
+                  transition: { duration: 0.16, ease: [0.23, 1, 0.32, 1] },
+                }}
                 className="shadow-xl rounded-xl"
                 style={{
                   x: translateX,
@@ -138,7 +141,7 @@ export const LinkPreview = ({
                     width={width}
                     height={height}
                     quality={quality}
-                    priority={true}
+                    loading="lazy"
                     className="rounded-lg"
                     alt="preview image"
                   />

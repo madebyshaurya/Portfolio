@@ -75,14 +75,6 @@ export function MixedFontName({ name }: { name: string }) {
     }, 58)
   }
 
-  if (assignments.length === 0) {
-    return (
-      <span style={{ fontFamily: "var(--font-editorial)", fontWeight: 300 }}>
-        {name}
-      </span>
-    )
-  }
-
   useEffect(() => {
     setCharacters(name.split(""))
     setAssignments(stableAssignments)
@@ -100,6 +92,14 @@ export function MixedFontName({ name }: { name: string }) {
       }
     }
   }, [name, stableAssignments])
+
+  if (assignments.length === 0) {
+    return (
+      <span style={{ fontFamily: "var(--font-editorial)", fontWeight: 300 }}>
+        {name}
+      </span>
+    )
+  }
 
   return (
     <span

@@ -35,7 +35,7 @@ export function LiveClock() {
   return (
     <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200/80 bg-white/92 px-3 py-2 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] backdrop-blur-sm">
       <span className="relative flex h-2 w-2">
-        <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400/40 animate-[pulse_3s_ease-in-out_infinite]" />
+        <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400/70 animate-[presence-ping_2.4s_cubic-bezier(0,0,0.2,1)_infinite]" />
         <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
       </span>
       <span className="text-sm text-zinc-500">
